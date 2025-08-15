@@ -12,20 +12,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useContext, useMemo, useState } from "react";
-import { AppContext } from "@/context/AppContext";
+import { AppContext, Rental } from "@/context/AppContext";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, parseISO } from "date-fns";
 import FilterBar from "@/components/filter-bar";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RentalsPage() {
   const { rentals, tools, customers, sites, returnTool } = useContext(AppContext);
+  const { toast } = useToast();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
+  const [returnQuantity, setReturnQuantity] = useState(1);
 
   const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
   const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
@@ -49,9 +64,36 @@ export default function RentalsPage() {
     setSelectedToolId(null);
     setDateRange(undefined);
   };
+  
+  const openReturnDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setReturnQuantity(rental.quantity); // Default to full quantity
+    setIsReturnDialogOpen(true);
+  }
+
+  const handleReturnTool = () => {
+    if (selectedRental && returnQuantity > 0) {
+      if (returnQuantity > selectedRental.quantity) {
+          toast({
+              title: "Error",
+              description: "Return quantity cannot be greater than the rented quantity.",
+              variant: "destructive"
+          });
+          return;
+      }
+      returnTool(selectedRental.id, returnQuantity);
+      toast({
+          title: "Success",
+          description: "Tool(s) have been returned successfully."
+      });
+      setIsReturnDialogOpen(false);
+      setSelectedRental(null);
+    }
+  }
 
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
@@ -125,7 +167,7 @@ export default function RentalsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {rental.status === 'Rented' && <DropdownMenuItem onClick={() => returnTool(rental.id)}>Return Tool</DropdownMenuItem>}
+                      {rental.status === 'Rented' && <DropdownMenuItem onClick={() => openReturnDialog(rental)}>Return Tool</DropdownMenuItem>}
                       <DropdownMenuItem>View Details</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -150,5 +192,39 @@ export default function RentalsPage() {
         </Table>
       </CardContent>
     </Card>
+
+    {/* Return Tool Dialog */}
+    <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Return Tool</DialogTitle>
+            <DialogDescription>
+              Enter the quantity of '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' to return.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="return-quantity" className="text-right">
+                Quantity
+              </Label>
+              <Input
+                id="return-quantity"
+                type="number"
+                value={returnQuantity}
+                onChange={(e) => setReturnQuantity(parseInt(e.target.value))}
+                min="1"
+                max={selectedRental?.quantity}
+                className="col-span-3"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleReturnTool}>Return</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

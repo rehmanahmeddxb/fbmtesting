@@ -54,7 +54,7 @@ interface AppContextType {
   editSite: (site: Site) => void;
   deleteSite: (id: number) => void;
   addRental: (rental: Omit<Rental, 'id' | 'invoice_number' | 'status' | 'return_date' | 'total_fee'> & { id?: number }) => void;
-  returnTool: (rentalId: number) => void;
+  returnTool: (rentalId: number, quantity: number) => void;
 }
 
 // Context
@@ -123,38 +123,56 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     ));
   };
 
-  const returnTool = (rentalId: number) => {
-    let returnedRental: Rental | undefined;
-
-    const updatedRentals = rentals.map(r => {
-        if (r.id === rentalId) {
-            const issueDate = new Date(r.issue_date);
-            const returnDate = new Date();
-            // Add 1 to include the start day in the rental period
-            const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
-            const total_fee = r.rate * r.quantity * (daysRented > 0 ? daysRented : 1);
-
-            returnedRental = {
-                ...r,
-                status: 'Returned',
-                return_date: format(returnDate, "yyyy-MM-dd"),
-                total_fee: total_fee,
-            };
-            return returnedRental;
-        }
-        return r;
-    });
-
-    if (returnedRental) {
-      setRentals(updatedRentals);
-      // Increase available quantity of the tool
-      const rentalToUpdate = returnedRental;
-      setTools(prevTools => prevTools.map(tool => {
-        if (tool.id === rentalToUpdate.tool_id) {
-          return { ...tool, available_quantity: tool.available_quantity + rentalToUpdate.quantity };
-        }
-        return tool;
-      }));
+  const returnTool = (rentalId: number, quantityToReturn: number) => {
+    const rentalToUpdate = rentals.find(r => r.id === rentalId);
+    if (!rentalToUpdate) return;
+  
+    // Increase available quantity of the tool
+    setTools(prevTools => prevTools.map(tool =>
+      tool.id === rentalToUpdate.tool_id
+        ? { ...tool, available_quantity: tool.available_quantity + quantityToReturn }
+        : tool
+    ));
+  
+    const issueDate = new Date(rentalToUpdate.issue_date);
+    const returnDate = new Date();
+    // Add 1 to include the start day in the rental period
+    const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
+    const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * (daysRented > 0 ? daysRented : 1);
+  
+    // If all items are returned, update the existing rental record
+    if (quantityToReturn === rentalToUpdate.quantity) {
+      setRentals(prevRentals => prevRentals.map(r =>
+        r.id === rentalId
+          ? {
+              ...r,
+              status: 'Returned',
+              return_date: format(returnDate, "yyyy-MM-dd"),
+              total_fee: feeForReturnedItems,
+            }
+          : r
+      ));
+    } else {
+      // If partially returned, update the original rental and create a new one for the returned items
+      
+      // 1. Update the original rental quantity
+      setRentals(prevRentals => prevRentals.map(r =>
+        r.id === rentalId
+          ? { ...r, quantity: r.quantity - quantityToReturn }
+          : r
+      ));
+      
+      // 2. Create a new rental record for the returned items
+      const returnedRental: Rental = {
+        ...rentalToUpdate,
+        id: Date.now(), // New unique ID
+        invoice_number: `${rentalToUpdate.invoice_number}-RTN`, // Indicate it's a return
+        quantity: quantityToReturn,
+        status: 'Returned',
+        return_date: format(returnDate, "yyyy-MM-dd"),
+        total_fee: feeForReturnedItems,
+      };
+      setRentals(prev => [...prev, returnedRental]);
     }
   };
 
