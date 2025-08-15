@@ -18,7 +18,7 @@ import { AppContext, Tool } from "@/context/AppContext";
 type RentalItem = {
     id: number;
     toolId: string;
-    quantity: number;
+    quantity: string; // Use string to allow for empty input
     tool: Tool | undefined;
 };
 
@@ -30,7 +30,7 @@ export default function RentToolPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([
-    { id: Date.now(), toolId: "", quantity: 1, tool: undefined }
+    { id: Date.now(), toolId: "", quantity: "1", tool: undefined }
   ]);
 
   const handleItemChange = (id: number, field: 'toolId' | 'quantity', value: string) => {
@@ -38,11 +38,11 @@ export default function RentToolPage() {
         if (item.id === id) {
             if (field === 'toolId') {
                 const selectedTool = tools.find(t => t.id === parseInt(value));
-                return { ...item, toolId: value, tool: selectedTool, quantity: 1 }; // Reset quantity when tool changes
+                return { ...item, toolId: value, tool: selectedTool, quantity: "1" }; // Reset quantity when tool changes
             }
             if (field === 'quantity') {
-                 const newQuantity = parseInt(value) || 1;
-                 return { ...item, quantity: newQuantity };
+                 // Allow empty input for user-friendliness, validation happens on submit
+                 return { ...item, quantity: value };
             }
         }
         return item;
@@ -50,7 +50,7 @@ export default function RentToolPage() {
   };
   
   const addRentalItem = () => {
-    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: 1, tool: undefined }]);
+    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: "1", tool: undefined }]);
   }
 
   const removeRentalItem = (id: number) => {
@@ -60,10 +60,10 @@ export default function RentToolPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId || item.quantity <= 0)) {
+    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId)) {
         toast({
             title: "Error",
-            description: "Please select a customer, a site, and a valid tool & quantity for each item.",
+            description: "Please select a customer, a site, and a tool for each item.",
             variant: "destructive"
         });
         return;
@@ -71,10 +71,20 @@ export default function RentToolPage() {
     
     // Final check for quantities before submitting
     for (const item of rentalItems) {
-        if (item.quantity > (item.tool?.available_quantity || 0)) {
+        const quantity = parseInt(item.quantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            toast({
+                title: "Error",
+                description: `Please enter a valid quantity for '${item.tool?.name}'.`,
+                variant: "destructive"
+            });
+            return;
+        }
+
+        if (quantity > (item.tool?.available_quantity || 0)) {
              toast({
                 title: "Error",
-                description: `Quantity for '${item.tool?.name}' exceeds available stock.`,
+                description: `Quantity for '${item.tool?.name}' exceeds available stock of ${item.tool?.available_quantity}.`,
                 variant: "destructive"
             });
             return;
@@ -84,7 +94,7 @@ export default function RentToolPage() {
     addRental(
         rentalItems.map(item => ({
             tool_id: parseInt(item.toolId),
-            quantity: item.quantity,
+            quantity: parseInt(item.quantity),
             rate: item.tool!.rate
         })),
         {
