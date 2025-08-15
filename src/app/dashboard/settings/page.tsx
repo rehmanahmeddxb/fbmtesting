@@ -6,9 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@/components/ui/alert-dialog"
+import React, { useContext } from "react";
+import { AppContext } from "@/context/AppContext";
 
 export default function SettingsPage() {
     const { toast } = useToast();
+    const { resetData } = useContext(AppContext);
+    const [isResetDialogOpen, setIsResetDialogOpen] = React.useState(false);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,6 +33,16 @@ export default function SettingsPage() {
             description: "Your changes have been saved successfully.",
         });
     };
+
+    const handleReset = () => {
+        resetData();
+        toast({
+            title: "Application Reset",
+            description: "All data has been cleared.",
+            variant: "destructive",
+        })
+        setIsResetDialogOpen(false);
+    }
 
     return (
         <form onSubmit={handleSubmit}>
@@ -67,6 +93,39 @@ export default function SettingsPage() {
                         </div>
                     </CardContent>
                 </Card>
+                
+                <Card className="border-destructive">
+                    <CardHeader>
+                        <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                        <CardDescription>These actions are irreversible. Please be certain.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">Reset All Application Data</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all of
+                                    your tools, customers, sites, and rental history.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    className="bg-destructive hover:bg-destructive/90"
+                                    onClick={handleReset}
+                                >
+                                    Yes, delete all data
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
+
                  <div className="flex justify-end">
                     <Button type="submit">Save Changes</Button>
                 </div>

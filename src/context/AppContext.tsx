@@ -70,6 +70,7 @@ interface AppContextType {
   deleteSite: (id: number) => void;
   addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
+  resetData: () => void;
   isLoading: boolean;
 }
 
@@ -90,6 +91,7 @@ export const AppContext = createContext<AppContextType>({
   deleteSite: () => {},
   addRental: () => {},
   returnTool: () => {},
+  resetData: () => {},
   isLoading: true,
 });
 
@@ -274,6 +276,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools: newTools, customers, sites, rentals: updatedRentals });
   };
 
+  // Reset Data
+  const resetData = () => {
+    const emptyData = {
+        tools: [],
+        customers: [],
+        sites: [],
+        rentals: [],
+    };
+    setTools(emptyData.tools);
+    setCustomers(emptyData.customers);
+    setSites(emptyData.sites);
+    setRentals(emptyData.rentals);
+    saveData(emptyData);
+  }
+
 
   return (
     <AppContext.Provider value={{
@@ -292,6 +309,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       deleteSite,
       addRental,
       returnTool,
+      resetData,
       isLoading,
     }}>
       {isLoading ? (
