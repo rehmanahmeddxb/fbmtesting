@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { format, differenceInCalendarDays } from 'date-fns';
 
 // Types
@@ -50,6 +50,47 @@ type RentalOrderInput = {
     issue_date: string;
 }
 
+// This is a placeholder for a real API. In a real app, this would be
+// replaced with actual API calls to a backend. For this local-first version,
+// we will just use mock data. In a Node.js environment, you could replace this
+// with fs calls to read/write from JSON files.
+const mockApi = {
+  getData: async () => {
+    // In a real scenario, you might fetch this from a server or read from files.
+    // For now, we'll start with some initial data if localStorage is empty.
+    const initialTools: Tool[] = [
+        { id: 1, name: 'Hammer Drill', total_quantity: 10, available_quantity: 10, rate: 15.00 },
+        { id: 2, name: 'Jackhammer', total_quantity: 5, available_quantity: 5, rate: 50.00 },
+        { id: 3, name: 'Scaffolding Set', total_quantity: 20, available_quantity: 20, rate: 25.00 },
+    ];
+    const initialCustomers: Customer[] = [
+        { id: 1, name: 'John Doe Construction', phone: '123-456-7890', address: '123 Main St' },
+        { id: 2, name: 'Jane Smith Renovations', phone: '098-765-4321', address: '456 Oak Ave' },
+    ];
+    const initialSites: Site[] = [
+        { id: 1, name: 'Downtown Tower Project' },
+        { id: 2, name: 'Suburb Residential Complex' },
+    ];
+    const initialRentals: Rental[] = [];
+
+    const data = {
+        tools: JSON.parse(localStorage.getItem('tools') || JSON.stringify(initialTools)),
+        customers: JSON.parse(localStorage.getItem('customers') || JSON.stringify(initialCustomers)),
+        sites: JSON.parse(localStorage.getItem('sites') || JSON.stringify(initialSites)),
+        rentals: JSON.parse(localStorage.getItem('rentals') || JSON.stringify(initialRentals)),
+    };
+    return data;
+  },
+  saveData: async (data: { tools: Tool[], customers: Customer[], sites: Site[], rentals: Rental[] }) => {
+    localStorage.setItem('tools', JSON.stringify(data.tools));
+    localStorage.setItem('customers', JSON.stringify(data.customers));
+    localStorage.setItem('sites', JSON.stringify(data.sites));
+    localStorage.setItem('rentals', JSON.stringify(data.rentals));
+    return true;
+  }
+};
+
+
 // Context Type
 interface AppContextType {
   tools: Tool[];
@@ -67,6 +108,7 @@ interface AppContextType {
   deleteSite: (id: number) => void;
   addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
+  isLoading: boolean;
 }
 
 // Context
@@ -86,6 +128,7 @@ export const AppContext = createContext<AppContextType>({
   deleteSite: () => {},
   addRental: () => {},
   returnTool: () => {},
+  isLoading: true,
 });
 
 // Provider
@@ -94,6 +137,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data on initial render
+  useEffect(() => {
+    const loadData = async () => {
+        setIsLoading(true);
+        const data = await mockApi.getData();
+        setTools(data.tools);
+        setCustomers(data.customers);
+        setSites(data.sites);
+        setRentals(data.rentals);
+        setIsLoading(false);
+    };
+    loadData();
+  }, []);
+
+  // Save data whenever it changes
+  useEffect(() => {
+    if(!isLoading) {
+        mockApi.saveData({ tools, customers, sites, rentals });
+    }
+  }, [tools, customers, sites, rentals, isLoading]);
 
   // Tool CRUD
   const addTool = (tool: Tool) => setTools(prev => [...prev, { ...tool, id: Date.now() }]);
@@ -214,8 +279,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       deleteSite,
       addRental,
       returnTool,
+      isLoading,
     }}>
-      {children}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-screen w-screen">
+          <p className="text-lg">Loading data...</p>
+        </div>
+      ) : (
+        children
+      )}
     </AppContext.Provider>
   );
 };
