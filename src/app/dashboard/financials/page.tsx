@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useState, useContext, useMemo } from "react";
 import { DateRange } from "react-day-picker";
-import { addDays, isWithinInterval, parseISO } from "date-fns";
+import { addDays, isWithinInterval, parseISO, differenceInCalendarDays } from "date-fns";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { AppContext } from "@/context/AppContext";
 
@@ -25,7 +25,18 @@ export default function FinancialsPage() {
     }, [rentals, date]);
 
     const totalRentalValue = useMemo(() => {
-        return filteredRentals.reduce((sum, rental) => sum + (rental.total_fee || 0), 0);
+        return filteredRentals.reduce((sum, rental) => {
+            if(rental.status === 'Returned' && rental.total_fee) {
+                return sum + rental.total_fee;
+            }
+            if(rental.status === 'Rented') {
+                const issueDate = new Date(rental.issue_date);
+                const today = new Date();
+                const daysRented = differenceInCalendarDays(today, issueDate) + 1;
+                return sum + (rental.rate * rental.quantity * (daysRented || 1));
+            }
+            return sum;
+        }, 0);
     }, [filteredRentals]);
     
     const totalReceived = useMemo(() => {
@@ -37,8 +48,8 @@ export default function FinancialsPage() {
         const pendingValue = pendingRentals.reduce((sum, rental) => {
              const issueDate = new Date(rental.issue_date);
              const today = new Date();
-             const daysRented = Math.ceil((today.getTime() - issueDate.getTime()) / (1000 * 3600 * 24)) || 1;
-             return sum + (rental.rate * rental.quantity * daysRented);
+             const daysRented = differenceInCalendarDays(today, issueDate) + 1;
+             return sum + (rental.rate * rental.quantity * (daysRented || 1));
         }, 0);
         return pendingValue;
     }, [filteredRentals]);

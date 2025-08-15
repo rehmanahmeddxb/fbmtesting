@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useState, ReactNode } from 'react';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 
 // Types
 export type Tool = {
@@ -124,31 +124,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const returnTool = (rentalId: number) => {
-    setRentals(prevRentals => prevRentals.map(rental => {
-        if (rental.id === rentalId) {
-            // Increase available quantity of the tool
-            setTools(prevTools => prevTools.map(tool => {
-                if (tool.id === rental.tool_id) {
-                    return { ...tool, available_quantity: tool.available_quantity + rental.quantity };
-                }
-                return tool;
-            }));
+    let returnedRental: Rental | undefined;
 
-            // Calculate fee
-            const issueDate = new Date(rental.issue_date);
+    const updatedRentals = rentals.map(r => {
+        if (r.id === rentalId) {
+            const issueDate = new Date(r.issue_date);
             const returnDate = new Date();
-            const daysRented = Math.ceil((returnDate.getTime() - issueDate.getTime()) / (1000 * 3600 * 24)) || 1;
-            const total_fee = rental.rate * rental.quantity * daysRented;
+            // Add 1 to include the start day in the rental period
+            const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
+            const total_fee = r.rate * r.quantity * (daysRented || 1);
 
-            return { 
-                ...rental, 
-                status: 'Returned', 
+            returnedRental = {
+                ...r,
+                status: 'Returned',
                 return_date: format(returnDate, "yyyy-MM-dd"),
                 total_fee: total_fee,
             };
+            return returnedRental;
         }
-        return rental;
-    }));
+        return r;
+    });
+
+    if (returnedRental) {
+      setRentals(updatedRentals);
+      // Increase available quantity of the tool
+      setTools(prevTools => prevTools.map(tool => {
+        if (tool.id === (returnedRental as Rental).tool_id) {
+          return { ...tool, available_quantity: tool.available_quantity + (returnedRental as Rental).quantity };
+        }
+        return tool;
+      }));
+    }
   };
 
 
