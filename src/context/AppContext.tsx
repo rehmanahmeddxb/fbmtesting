@@ -50,6 +50,13 @@ type RentalOrderInput = {
     issue_date: string;
 }
 
+type ResetOptions = {
+    tools?: boolean;
+    customers?: boolean;
+    sites?: boolean;
+    rentals?: boolean;
+}
+
 // In a real app, this would be replaced with actual API calls to a backend.
 // We will now use local JSON files via API routes for persistence.
 
@@ -70,7 +77,7 @@ interface AppContextType {
   deleteSite: (id: number) => void;
   addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
-  resetData: () => void;
+  resetData: (options: ResetOptions) => void;
   isLoading: boolean;
 }
 
@@ -277,18 +284,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Reset Data
-  const resetData = () => {
-    const emptyData = {
-        tools: [],
-        customers: [],
-        sites: [],
-        rentals: [],
+  const resetData = (options: ResetOptions) => {
+    const newData = {
+        tools: options.tools ? [] : tools,
+        customers: options.customers ? [] : customers,
+        sites: options.sites ? [] : sites,
+        rentals: options.rentals ? [] : rentals,
     };
-    setTools(emptyData.tools);
-    setCustomers(emptyData.customers);
-    setSites(emptyData.sites);
-    setRentals(emptyData.rentals);
-    saveData(emptyData);
+
+    if (options.tools) setTools([]);
+    if (options.customers) setCustomers([]);
+    if (options.sites) setSites([]);
+    if (options.rentals) setRentals([]);
+    
+    saveData(newData);
   }
 
 
