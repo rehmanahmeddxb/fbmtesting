@@ -10,7 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function CustomerDetailPage() {
-  const { customers, rentals, tools } = useContext(AppContext);
+  const { customers, rentals, tools, sites } = useContext(AppContext);
   const params = useParams();
   const router = useRouter();
   const customerId = parseInt(params.id as string);
@@ -18,6 +18,7 @@ export default function CustomerDetailPage() {
   const customer = customers.find((c) => c.id === customerId);
   const customerRentals = rentals.filter((r) => r.customer_id === customerId);
   const getToolName = (id: number) => tools.find((t) => t.id === id)?.name || 'Unknown Tool';
+  const getSiteName = (id: number) => sites.find((s) => s.id === id)?.name || 'Unknown Site';
 
   if (!customer) {
     return (
@@ -71,7 +72,7 @@ export default function CustomerDetailPage() {
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{rental.quantity}</TableCell>
                   <TableCell>{rental.issue_date}</TableCell>
-                   <TableCell>{rentals.find(r => r.id === rental.id)?.site_id}</TableCell>
+                   <TableCell>{getSiteName(rental.site_id)}</TableCell>
                 </TableRow>
               ))}
                {customerRentals.filter(r => r.status === 'Rented').length === 0 && (

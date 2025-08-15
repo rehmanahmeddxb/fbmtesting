@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "name": "wheel barrow",
+    "total_quantity": 100,
+    "rate": 0,
+    "id": 1755246303607,
+    "available_quantity": 100
+  },
+  {
+    "name": "shovel",
+    "total_quantity": 100,
+    "rate": 0,
+    "id": 1755246310375,
+    "available_quantity": 100
+  }
+]

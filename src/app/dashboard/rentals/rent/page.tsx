@@ -41,8 +41,10 @@ export default function RentToolPage() {
                 return { ...item, toolId: value, tool: selectedTool, quantity: 1 }; // Reset quantity when tool changes
             }
             if (field === 'quantity') {
-                 const newQuantity = parseInt(value) || 1;
+                 const newQuantity = parseInt(value) || 0;
                  const maxQuantity = item.tool?.available_quantity || 1;
+                 // Ensure quantity is at least 1 and not more than available
+                 if (newQuantity < 1) return { ...item, quantity: 1};
                  return { ...item, quantity: Math.min(newQuantity, maxQuantity) };
             }
         }
@@ -195,11 +197,12 @@ export default function RentToolPage() {
                                 min="1" 
                                 max={item.tool?.available_quantity} 
                                 value={item.quantity} 
+                                disabled={!item.tool}
                                 onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor={`rate-${item.id}`}>Daily Rate ($)</Label>
-                            <Input id={`rate-${item.id}`} type="number" value={item.tool?.rate || 0} readOnly />
+                            <Input id={`rate-${item.id}`} type="number" value={item.tool?.rate ?? 0} readOnly />
                         </div>
                         {rentalItems.length > 1 && (
                             <Button variant="ghost" size="icon" onClick={() => removeRentalItem(item.id)} className="text-destructive hover:bg-destructive/10">
