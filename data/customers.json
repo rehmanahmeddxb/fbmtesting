@@ -1,14 +1,1 @@
-[
-  {
-    "id": 1,
-    "name": "John Doe Construction",
-    "phone": "123-456-7890",
-    "address": "123 Main St"
-  },
-  {
-    "id": 2,
-    "name": "Jane Smith Renovations",
-    "phone": "098-765-4321",
-    "address": "456 Oak Ave"
-  }
-]
+[]

@@ -9,19 +9,9 @@ const sitesPath = path.join(dataDir, 'sites.json');
 const rentalsPath = path.join(dataDir, 'rentals.json');
 
 const initialData = {
-    tools: [
-        { id: 1, name: 'Hammer Drill', total_quantity: 10, available_quantity: 10, rate: 15.00 },
-        { id: 2, name: 'Jackhammer', total_quantity: 5, available_quantity: 5, rate: 50.00 },
-        { id: 3, name: 'Scaffolding Set', total_quantity: 20, available_quantity: 20, rate: 25.00 },
-    ],
-    customers: [
-        { id: 1, name: 'John Doe Construction', phone: '123-456-7890', address: '123 Main St' },
-        { id: 2, name: 'Jane Smith Renovations', phone: '098-765-4321', address: '456 Oak Ave' },
-    ],
-    sites: [
-        { id: 1, name: 'Downtown Tower Project' },
-        { id: 2, name: 'Suburb Residential Complex' },
-    ],
+    tools: [],
+    customers: [],
+    sites: [],
     rentals: []
 }
 
