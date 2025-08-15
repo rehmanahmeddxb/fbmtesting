@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
                      <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                         <Avatar>
                             <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
-                            <AvatarFallback>U</AvatarFallback>
+                            <AvatarFallback>RA</AvatarFallback>
                         </Avatar>
                      </Button>
                   </DropdownMenuTrigger>
