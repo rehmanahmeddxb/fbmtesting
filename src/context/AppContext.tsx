@@ -38,6 +38,18 @@ export type Rental = {
     total_fee: number | null;
 };
 
+type RentalItemInput = {
+    tool_id: number;
+    quantity: number;
+    rate: number;
+}
+
+type RentalOrderInput = {
+    customer_id: number;
+    site_id: number;
+    issue_date: string;
+}
+
 // Context Type
 interface AppContextType {
   tools: Tool[];
@@ -53,7 +65,7 @@ interface AppContextType {
   addSite: (site: Site) => void;
   editSite: (site: Site) => void;
   deleteSite: (id: number) => void;
-  addRental: (rental: Omit<Rental, 'id' | 'invoice_number' | 'status' | 'return_date' | 'total_fee'> & { id?: number }) => void;
+  addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
 }
 
@@ -105,22 +117,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteSite = (id: number) => setSites(prev => prev.filter(site => site.id !== id));
 
   // Rental Operations
-  const addRental = (rentalData: Omit<Rental, 'id' | 'invoice_number' | 'status' | 'return_date' | 'total_fee'> & { id?: number }) => {
-    const newRental: Rental = {
-        ...rentalData,
-        id: rentalData.id || Date.now(),
-        invoice_number: `INV-${Date.now()}`,
+   const addRental = (items: RentalItemInput[], orderDetails: RentalOrderInput) => {
+    const invoice_number = `INV-${Date.now()}`;
+    const newRentals: Rental[] = items.map(item => ({
+        ...orderDetails,
+        id: Date.now() + item.tool_id, // simple unique id
+        invoice_number: invoice_number,
+        tool_id: item.tool_id,
+        quantity: item.quantity,
+        rate: item.rate,
         status: 'Rented',
         return_date: null,
         total_fee: null,
-    };
-    setRentals(prev => [...prev, newRental]);
-    // Decrease available quantity of the tool
-    setTools(prevTools => prevTools.map(tool =>
-        tool.id === rentalData.tool_id
-            ? { ...tool, available_quantity: tool.available_quantity - rentalData.quantity }
-            : tool
-    ));
+    }));
+
+    setRentals(prev => [...prev, ...newRentals]);
+
+    // Decrease available quantity for each tool
+    items.forEach(item => {
+        setTools(prevTools => prevTools.map(tool =>
+            tool.id === item.tool_id
+                ? { ...tool, available_quantity: tool.available_quantity - item.quantity }
+                : tool
+        ));
+    });
   };
 
   const returnTool = (rentalId: number, quantityToReturn: number) => {
