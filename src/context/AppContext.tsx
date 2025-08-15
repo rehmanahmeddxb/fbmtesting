@@ -84,21 +84,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [rentals, setRentals] = useState<Rental[]>([]);
 
   // Tool CRUD
-  const addTool = (tool: Tool) => setTools(prev => [...prev, tool]);
+  const addTool = (tool: Tool) => setTools(prev => [...prev, { ...tool, id: Date.now() }]);
   const editTool = (updatedTool: Tool) => {
     setTools(prev => prev.map(tool => tool.id === updatedTool.id ? updatedTool : tool));
   };
   const deleteTool = (id: number) => setTools(prev => prev.filter(tool => tool.id !== id));
 
   // Customer CRUD
-  const addCustomer = (customer: Customer) => setCustomers(prev => [...prev, customer]);
+  const addCustomer = (customer: Customer) => setCustomers(prev => [...prev, { ...customer, id: Date.now() }]);
   const editCustomer = (updatedCustomer: Customer) => {
     setCustomers(prev => prev.map(customer => customer.id === updatedCustomer.id ? updatedCustomer : customer));
   };
   const deleteCustomer = (id: number) => setCustomers(prev => prev.filter(customer => customer.id !== id));
 
   // Site CRUD
-  const addSite = (site: Site) => setSites(prev => [...prev, site]);
+  const addSite = (site: Site) => setSites(prev => [...prev, { ...site, id: Date.now() }]);
   const editSite = (updatedSite: Site) => {
     setSites(prev => prev.map(site => site.id === updatedSite.id ? updatedSite : site));
   };
@@ -132,7 +132,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const returnDate = new Date();
             // Add 1 to include the start day in the rental period
             const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
-            const total_fee = r.rate * r.quantity * (daysRented || 1);
+            const total_fee = r.rate * r.quantity * (daysRented > 0 ? daysRented : 1);
 
             returnedRental = {
                 ...r,
@@ -148,9 +148,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (returnedRental) {
       setRentals(updatedRentals);
       // Increase available quantity of the tool
+      const rentalToUpdate = returnedRental;
       setTools(prevTools => prevTools.map(tool => {
-        if (tool.id === (returnedRental as Rental).tool_id) {
-          return { ...tool, available_quantity: tool.available_quantity + (returnedRental as Rental).quantity };
+        if (tool.id === rentalToUpdate.tool_id) {
+          return { ...tool, available_quantity: tool.available_quantity + rentalToUpdate.quantity };
         }
         return tool;
       }));

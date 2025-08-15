@@ -21,7 +21,7 @@ export default function InventoryPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
-  const [toolData, setToolData] = useState({ name: '', total_quantity: 1, available_quantity: 1, rate: 0 });
+  const [toolData, setToolData] = useState({ name: '', total_quantity: 1, rate: 0 });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,11 +29,10 @@ export default function InventoryPage() {
       setToolData({
         name: selectedTool.name,
         total_quantity: selectedTool.total_quantity,
-        available_quantity: selectedTool.available_quantity,
         rate: selectedTool.rate,
       });
     } else {
-      setToolData({ name: '', total_quantity: 1, available_quantity: 1, rate: 0 });
+      setToolData({ name: '', total_quantity: 1, rate: 0 });
     }
   }, [selectedTool]);
 
@@ -41,12 +40,20 @@ export default function InventoryPage() {
     addTool({ ...toolData, id: Date.now(), available_quantity: toolData.total_quantity });
     toast({ title: "Success!", description: "New tool has been added." });
     setIsAddDialogOpen(false);
-    setToolData({ name: '', total_quantity: 1, available_quantity: 1, rate: 0 });
+    setToolData({ name: '', total_quantity: 1, rate: 0 });
   };
 
   const handleEditTool = () => {
     if (selectedTool) {
-      editTool({ ...selectedTool, ...toolData });
+      // Logic to calculate the new available quantity based on the change in total quantity.
+      const quantityDifference = toolData.total_quantity - selectedTool.total_quantity;
+      const newAvailableQuantity = selectedTool.available_quantity + quantityDifference;
+
+      editTool({ 
+        ...selectedTool, 
+        ...toolData,
+        available_quantity: newAvailableQuantity < 0 ? 0 : newAvailableQuantity // Ensure available quantity doesn't go negative
+      });
       toast({ title: "Success!", description: "Tool details have been updated." });
     }
     setIsEditDialogOpen(false);
@@ -145,11 +152,7 @@ export default function InventoryPage() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="total_quantity" className="text-right">Total Qty</Label>
-              <Input id="total_quantity" type="number" value={toolData.total_quantity} onChange={(e) => setToolData({ ...toolData, total_quantity: parseInt(e.target.value) || 0 })} className="col-span-3" required />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="available_quantity" className="text-right">Available Qty</Label>
-              <Input id="available_quantity" type="number" value={toolData.available_quantity} onChange={(e) => setToolData({ ...toolData, available_quantity: parseInt(e.target.value) || 0 })} className="col-span-3" required />
+              <Input id="total_quantity" type="number" min="1" value={toolData.total_quantity} onChange={(e) => setToolData({ ...toolData, total_quantity: parseInt(e.target.value) || 1 })} className="col-span-3" required />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="rate" className="text-right">Rate ($)</Label>
