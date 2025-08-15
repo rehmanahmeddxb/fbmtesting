@@ -15,6 +15,7 @@ import {
   FileText,
   CircleDollarSign,
   Settings,
+  ListChecks,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/dashboard/customers', label: 'Customers', icon: Users },
   { href: '/dashboard/sites', label: 'Sites', icon: MapPin },
   { href: '/dashboard/rentals', label: 'Rentals', icon: ListOrdered },
+  { href: '/dashboard/tool-tracking', label: 'Tool Tracking', icon: ListChecks },
   { href: '/dashboard/summary', label: 'Summary', icon: AreaChart },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText },
   { href: '/dashboard/financials', label: 'Financials', icon: CircleDollarSign },
