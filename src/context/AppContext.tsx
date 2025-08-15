@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { format, differenceInCalendarDays } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 // Types
 export type Tool = {
@@ -68,7 +69,7 @@ interface AppContextType {
   rentals: Rental[];
   addTool: (tool: Tool) => void;
   editTool: (tool: Tool) => void;
-  deleteTool: (id: number) => void;
+  deleteTool: (id: number) => boolean;
   addCustomer: (customer: Customer) => void;
   editCustomer: (customer: Customer) => void;
   deleteCustomer: (id: number) => void;
@@ -89,7 +90,7 @@ export const AppContext = createContext<AppContextType>({
   rentals: [],
   addTool: () => {},
   editTool: () => {},
-  deleteTool: () => {},
+  deleteTool: () => false,
   addCustomer: () => {},
   editCustomer: () => {},
   deleteCustomer: () => {},
@@ -117,10 +118,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try {
             const response = await fetch('/api/data');
             const data = await response.json();
-            setTools(data.tools);
-            setCustomers(data.customers);
-            setSites(data.sites);
-            setRentals(data.rentals);
+            setTools(data.tools || []);
+            setCustomers(data.customers || []);
+            setSites(data.sites || []);
+            setRentals(data.rentals || []);
         } catch (error) {
             console.error("Failed to fetch data from API", error);
             // Fallback to empty data if API fails
@@ -149,7 +150,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Tool CRUD
   const addTool = (tool: Tool) => {
-    const newTools = [...tools, { ...tool, id: Date.now() }];
+    const newTools = [...tools, { ...tool, id: Date.now(), available_quantity: tool.total_quantity }];
     setTools(newTools);
     saveData({ tools: newTools, customers, sites, rentals });
   }
@@ -158,10 +159,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setTools(newTools);
     saveData({ tools: newTools, customers, sites, rentals });
   };
-  const deleteTool = (id: number) => {
+  const deleteTool = (id: number): boolean => {
+     const hasActiveRentals = rentals.some(rental => rental.tool_id === id && rental.status === 'Rented');
+     if (hasActiveRentals) {
+         return false; // Indicate failure
+     }
      const newTools = tools.filter(tool => tool.id !== id);
      setTools(newTools);
      saveData({ tools: newTools, customers, sites, rentals });
+     return true; // Indicate success
   }
 
   // Customer CRUD
@@ -176,9 +182,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools, customers: newCustomers, sites, rentals });
   };
   const deleteCustomer = (id: number) => {
+    // Find active rentals for this customer
+    const customerRentals = rentals.filter(r => r.customer_id === id && r.status === 'Rented');
+    let updatedTools = [...tools];
+
+    // Return rented items to inventory
+    customerRentals.forEach(rental => {
+        updatedTools = updatedTools.map(tool => 
+            tool.id === rental.tool_id 
+            ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
+            : tool
+        );
+    });
+
+    // Remove customer and their rentals
     const newCustomers = customers.filter(customer => customer.id !== id);
+    const newRentals = rentals.filter(rental => rental.customer_id !== id);
+    
     setCustomers(newCustomers);
-    saveData({ tools, customers: newCustomers, sites, rentals });
+    setRentals(newRentals);
+    setTools(updatedTools);
+
+    saveData({ tools: updatedTools, customers: newCustomers, sites, rentals: newRentals });
   }
 
   // Site CRUD
@@ -236,11 +261,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const issueDate = new Date(rentalToUpdate.issue_date);
     const returnDate = new Date();
-    // Add 1 to include the start day in the rental period
     const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * (daysRented > 0 ? daysRented : 1);
   
-    if (quantityToReturn === rentalToUpdate.quantity) {
+    if (quantityToReturn >= rentalToUpdate.quantity) {
       updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? {
@@ -248,6 +272,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               status: 'Returned',
               return_date: format(returnDate, "yyyy-MM-dd"),
               total_fee: feeForReturnedItems,
+              quantity: quantityToReturn, // ensure it matches the actual returned quantity
             }
           : r
       );
@@ -285,19 +310,56 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Reset Data
   const resetData = (options: ResetOptions) => {
-    const newData = {
-        tools: options.tools ? [] : tools,
-        customers: options.customers ? [] : customers,
-        sites: options.sites ? [] : sites,
-        rentals: options.rentals ? [] : rentals,
-    };
+    let updatedTools = [...tools];
+    let updatedCustomers = [...customers];
+    let updatedSites = [...sites];
+    let updatedRentals = [...rentals];
 
-    if (options.tools) setTools([]);
-    if (options.customers) setCustomers([]);
-    if (options.sites) setSites([]);
-    if (options.rentals) setRentals([]);
+    if (options.rentals) {
+        // Return all rented items to inventory before clearing rentals
+        const rentedItems = rentals.filter(r => r.status === 'Rented');
+        rentedItems.forEach(rental => {
+            updatedTools = updatedTools.map(tool => 
+                tool.id === rental.tool_id
+                ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
+                : tool
+            )
+        });
+        updatedRentals = [];
+    }
+    if (options.tools) {
+        // If we clear tools, we must also clear rentals
+        updatedTools = [];
+        updatedRentals = [];
+    }
+    if (options.customers) {
+        // If we clear customers, we must also clear rentals and update inventory
+         const rentedItems = rentals.filter(r => r.status === 'Rented');
+         rentedItems.forEach(rental => {
+             updatedTools = updatedTools.map(tool => 
+                 tool.id === rental.tool_id
+                 ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
+                 : tool
+             )
+         });
+        updatedCustomers = [];
+        updatedRentals = [];
+    }
+    if(options.sites) {
+        updatedSites = [];
+    }
     
-    saveData(newData);
+    setTools(updatedTools);
+    setCustomers(updatedCustomers);
+    setSites(updatedSites);
+    setRentals(updatedRentals);
+    
+    saveData({
+        tools: updatedTools,
+        customers: updatedCustomers,
+        sites: updatedSites,
+        rentals: updatedRentals
+    });
   }
 
 
@@ -331,3 +393,5 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     </AppContext.Provider>
   );
 };
+
+    

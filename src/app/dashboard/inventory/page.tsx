@@ -16,7 +16,7 @@ import { AppContext, Tool } from "@/context/AppContext";
 
 
 export default function InventoryPage() {
-  const { tools, addTool, editTool, deleteTool } = useContext(AppContext);
+  const { tools, addTool, editTool, deleteTool, rentals } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,10 +49,15 @@ export default function InventoryPage() {
       const quantityDifference = toolData.total_quantity - selectedTool.total_quantity;
       const newAvailableQuantity = selectedTool.available_quantity + quantityDifference;
 
+      if(newAvailableQuantity < 0) {
+        toast({ title: "Error", description: "Total quantity cannot be less than the number of tools currently rented out.", variant: "destructive"});
+        return;
+      }
+
       editTool({ 
         ...selectedTool, 
         ...toolData,
-        available_quantity: newAvailableQuantity < 0 ? 0 : newAvailableQuantity // Ensure available quantity doesn't go negative
+        available_quantity: newAvailableQuantity
       });
       toast({ title: "Success!", description: "Tool details have been updated." });
     }
@@ -62,8 +67,12 @@ export default function InventoryPage() {
 
   const handleDeleteTool = () => {
     if (selectedTool) {
-      deleteTool(selectedTool.id);
-      toast({ title: "Success!", description: "Tool has been deleted.", variant: "destructive" });
+      const success = deleteTool(selectedTool.id);
+      if (success) {
+        toast({ title: "Success!", description: "Tool has been deleted.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: "Cannot delete a tool that has active rentals. Please return all items first.", variant: "destructive" });
+      }
     }
     setIsDeleteDialogOpen(false);
     setSelectedTool(null);
@@ -185,3 +194,5 @@ export default function InventoryPage() {
     </>
   );
 }
+
+    
