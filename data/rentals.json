@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "customer_id": 1755246320543,
+    "site_id": 1755246343495,
+    "issue_date": "2025-08-15",
+    "id": 3510492967675,
+    "invoice_number": "INV-1755246664068",
+    "tool_id": 1755246303607,
+    "quantity": 10,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  },
+  {
+    "customer_id": 1755246320543,
+    "site_id": 1755246343495,
+    "issue_date": "2025-08-15",
+    "id": 3510492974443,
+    "invoice_number": "INV-1755246664068",
+    "tool_id": 1755246310375,
+    "quantity": 10,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  }
+]

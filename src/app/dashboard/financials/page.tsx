@@ -24,16 +24,20 @@ export default function FinancialsPage() {
         });
     }, [rentals, date]);
 
+    const calculateFee = (rental: { issue_date: string; return_date?: string | null; rate: number; quantity: number; }) => {
+        const issueDate = new Date(rental.issue_date);
+        const endDate = rental.return_date ? new Date(rental.return_date) : new Date();
+        const daysRented = differenceInCalendarDays(endDate, issueDate) + 1;
+        return rental.rate * rental.quantity * (daysRented > 0 ? daysRented : 1);
+    }
+    
     const totalRentalValue = useMemo(() => {
         return filteredRentals.reduce((sum, rental) => {
             if(rental.status === 'Returned' && rental.total_fee) {
                 return sum + rental.total_fee;
             }
             if(rental.status === 'Rented') {
-                const issueDate = new Date(rental.issue_date);
-                const today = new Date();
-                const daysRented = differenceInCalendarDays(today, issueDate) + 1;
-                return sum + (rental.rate * rental.quantity * (daysRented || 1));
+                return sum + calculateFee(rental);
             }
             return sum;
         }, 0);
@@ -46,10 +50,7 @@ export default function FinancialsPage() {
     const totalPending = useMemo(() => {
         const pendingRentals = filteredRentals.filter(r => r.status === 'Rented');
         const pendingValue = pendingRentals.reduce((sum, rental) => {
-             const issueDate = new Date(rental.issue_date);
-             const today = new Date();
-             const daysRented = differenceInCalendarDays(today, issueDate) + 1;
-             return sum + (rental.rate * rental.quantity * (daysRented || 1));
+             return sum + calculateFee(rental);
         }, 0);
         return pendingValue;
     }, [filteredRentals]);
