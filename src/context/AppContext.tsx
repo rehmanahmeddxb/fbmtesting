@@ -51,23 +51,7 @@ type RentalOrderInput = {
 }
 
 // In a real app, this would be replaced with actual API calls to a backend.
-// For this version, we will use mock data that is persisted to localStorage.
-const initialData = {
-    tools: [
-        { id: 1, name: 'Hammer Drill', total_quantity: 10, available_quantity: 10, rate: 15.00 },
-        { id: 2, name: 'Jackhammer', total_quantity: 5, available_quantity: 5, rate: 50.00 },
-        { id: 3, name: 'Scaffolding Set', total_quantity: 20, available_quantity: 20, rate: 25.00 },
-    ],
-    customers: [
-        { id: 1, name: 'John Doe Construction', phone: '123-456-7890', address: '123 Main St' },
-        { id: 2, name: 'Jane Smith Renovations', phone: '098-765-4321', address: '456 Oak Ave' },
-    ],
-    sites: [
-        { id: 1, name: 'Downtown Tower Project' },
-        { id: 2, name: 'Suburb Residential Complex' },
-    ],
-    rentals: []
-}
+// We will now use local JSON files via API routes for persistence.
 
 // Context Type
 interface AppContextType {
@@ -119,25 +103,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Load data on initial render
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
         setIsLoading(true);
         try {
-            const toolsData = JSON.parse(localStorage.getItem('fbm_tools') || JSON.stringify(initialData.tools));
-            const customersData = JSON.parse(localStorage.getItem('fbm_customers') || JSON.stringify(initialData.customers));
-            const sitesData = JSON.parse(localStorage.getItem('fbm_sites') || JSON.stringify(initialData.sites));
-            const rentalsData = JSON.parse(localStorage.getItem('fbm_rentals') || JSON.stringify(initialData.rentals));
-
-            setTools(toolsData);
-            setCustomers(customersData);
-            setSites(sitesData);
-            setRentals(rentalsData);
+            const response = await fetch('/api/data');
+            const data = await response.json();
+            setTools(data.tools);
+            setCustomers(data.customers);
+            setSites(data.sites);
+            setRentals(data.rentals);
         } catch (error) {
-            console.error("Failed to parse data from localStorage", error);
-            // Fallback to initial data if parsing fails
-            setTools(initialData.tools);
-            setCustomers(initialData.customers);
-            setSites(initialData.sites);
-            setRentals(initialData.rentals);
+            console.error("Failed to fetch data from API", error);
+            // Fallback to empty data if API fails
+            setTools([]);
+            setCustomers([]);
+            setSites([]);
+            setRentals([]);
         } finally {
             setIsLoading(false);
         }
@@ -145,41 +126,73 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     loadData();
   }, []);
 
-  // Save data whenever it changes
-  useEffect(() => {
-    if(!isLoading) {
-        localStorage.setItem('fbm_tools', JSON.stringify(tools));
-        localStorage.setItem('fbm_customers', JSON.stringify(customers));
-        localStorage.setItem('fbm_sites', JSON.stringify(sites));
-        localStorage.setItem('fbm_rentals', JSON.stringify(rentals));
-    }
-  }, [tools, customers, sites, rentals, isLoading]);
+  const saveData = async (data: { tools: Tool[], customers: Customer[], sites: Site[], rentals: Rental[] }) => {
+     try {
+        await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+     } catch (error) {
+        console.error("Failed to save data via API", error);
+     }
+  };
 
   // Tool CRUD
-  const addTool = (tool: Tool) => setTools(prev => [...prev, { ...tool, id: Date.now() }]);
+  const addTool = (tool: Tool) => {
+    const newTools = [...tools, { ...tool, id: Date.now() }];
+    setTools(newTools);
+    saveData({ tools: newTools, customers, sites, rentals });
+  }
   const editTool = (updatedTool: Tool) => {
-    setTools(prev => prev.map(tool => tool.id === updatedTool.id ? updatedTool : tool));
+    const newTools = tools.map(tool => tool.id === updatedTool.id ? updatedTool : tool);
+    setTools(newTools);
+    saveData({ tools: newTools, customers, sites, rentals });
   };
-  const deleteTool = (id: number) => setTools(prev => prev.filter(tool => tool.id !== id));
+  const deleteTool = (id: number) => {
+     const newTools = tools.filter(tool => tool.id !== id);
+     setTools(newTools);
+     saveData({ tools: newTools, customers, sites, rentals });
+  }
 
   // Customer CRUD
-  const addCustomer = (customer: Customer) => setCustomers(prev => [...prev, { ...customer, id: Date.now() }]);
+  const addCustomer = (customer: Customer) => {
+    const newCustomers = [...customers, { ...customer, id: Date.now() }];
+    setCustomers(newCustomers);
+    saveData({ tools, customers: newCustomers, sites, rentals });
+  }
   const editCustomer = (updatedCustomer: Customer) => {
-    setCustomers(prev => prev.map(customer => customer.id === updatedCustomer.id ? updatedCustomer : customer));
+    const newCustomers = customers.map(customer => customer.id === updatedCustomer.id ? updatedCustomer : customer);
+    setCustomers(newCustomers);
+    saveData({ tools, customers: newCustomers, sites, rentals });
   };
-  const deleteCustomer = (id: number) => setCustomers(prev => prev.filter(customer => customer.id !== id));
+  const deleteCustomer = (id: number) => {
+    const newCustomers = customers.filter(customer => customer.id !== id);
+    setCustomers(newCustomers);
+    saveData({ tools, customers: newCustomers, sites, rentals });
+  }
 
   // Site CRUD
-  const addSite = (site: Site) => setSites(prev => [...prev, { ...site, id: Date.now() }]);
-  const editSite = (updatedSite: Site) => {
-    setSites(prev => prev.map(site => site.id === updatedSite.id ? updatedSite : site));
+  const addSite = (site: Site) => {
+    const newSites = [...sites, { ...site, id: Date.now() }];
+    setSites(newSites);
+    saveData({ tools, customers, sites: newSites, rentals });
   };
-  const deleteSite = (id: number) => setSites(prev => prev.filter(site => site.id !== id));
+  const editSite = (updatedSite: Site) => {
+    const newSites = sites.map(site => site.id === updatedSite.id ? updatedSite : site);
+    setSites(newSites);
+    saveData({ tools, customers, sites: newSites, rentals });
+  };
+  const deleteSite = (id: number) => {
+    const newSites = sites.filter(site => site.id !== id);
+    setSites(newSites);
+    saveData({ tools, customers, sites: newSites, rentals });
+  }
 
   // Rental Operations
    const addRental = (items: RentalItemInput[], orderDetails: RentalOrderInput) => {
     const invoice_number = `INV-${Date.now()}`;
-    const newRentals: Rental[] = items.map(item => ({
+    const newRentalsToAdd: Rental[] = items.map(item => ({
         ...orderDetails,
         id: Date.now() + item.tool_id, // simple unique id
         invoice_number: invoice_number,
@@ -190,39 +203,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return_date: null,
         total_fee: null,
     }));
-
-    setRentals(prev => [...prev, ...newRentals]);
+    
+    const newRentals = [...rentals, ...newRentalsToAdd];
+    setRentals(newRentals);
 
     // Decrease available quantity for each tool
-    items.forEach(item => {
-        setTools(prevTools => prevTools.map(tool =>
-            tool.id === item.tool_id
-                ? { ...tool, available_quantity: tool.available_quantity - item.quantity }
-                : tool
-        ));
+    const newTools = tools.map(tool => {
+        const rentedItem = items.find(item => item.tool_id === tool.id);
+        if (rentedItem) {
+            return { ...tool, available_quantity: tool.available_quantity - rentedItem.quantity }
+        }
+        return tool;
     });
+    setTools(newTools);
+    saveData({ tools: newTools, customers, sites, rentals: newRentals });
   };
 
   const returnTool = (rentalId: number, quantityToReturn: number) => {
     const rentalToUpdate = rentals.find(r => r.id === rentalId);
     if (!rentalToUpdate) return;
   
-    // Increase available quantity of the tool
-    setTools(prevTools => prevTools.map(tool =>
-      tool.id === rentalToUpdate.tool_id
-        ? { ...tool, available_quantity: tool.available_quantity + quantityToReturn }
-        : tool
-    ));
-  
+    let updatedRentals = [...rentals];
+    
     const issueDate = new Date(rentalToUpdate.issue_date);
     const returnDate = new Date();
     // Add 1 to include the start day in the rental period
     const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * (daysRented > 0 ? daysRented : 1);
   
-    // If all items are returned, update the existing rental record
     if (quantityToReturn === rentalToUpdate.quantity) {
-      setRentals(prevRentals => prevRentals.map(r =>
+      updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? {
               ...r,
@@ -231,29 +241,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               total_fee: feeForReturnedItems,
             }
           : r
-      ));
+      );
     } else {
-      // If partially returned, update the original rental and create a new one for the returned items
-      
       // 1. Update the original rental quantity
-      setRentals(prevRentals => prevRentals.map(r =>
+      updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? { ...r, quantity: r.quantity - quantityToReturn }
           : r
-      ));
+      );
       
       // 2. Create a new rental record for the returned items
       const returnedRental: Rental = {
         ...rentalToUpdate,
         id: Date.now(), // New unique ID
-        invoice_number: `${rentalToUpdate.invoice_number}-RTN`, // Indicate it's a return
+        invoice_number: `${rentalToUpdate.invoice_number}-RTN`,
         quantity: quantityToReturn,
         status: 'Returned',
         return_date: format(returnDate, "yyyy-MM-dd"),
         total_fee: feeForReturnedItems,
       };
-      setRentals(prev => [...prev, returnedRental]);
+      updatedRentals.push(returnedRental);
     }
+    setRentals(updatedRentals);
+
+    // Increase available quantity of the tool
+    const newTools = tools.map(tool =>
+        tool.id === rentalToUpdate.tool_id
+          ? { ...tool, available_quantity: tool.available_quantity + quantityToReturn }
+          : tool
+    );
+    setTools(newTools);
+    saveData({ tools: newTools, customers, sites, rentals: updatedRentals });
   };
 
 

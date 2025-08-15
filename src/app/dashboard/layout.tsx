@@ -1,10 +1,12 @@
 import type { PropsWithChildren } from "react";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Wrench } from "lucide-react";
+import { Wrench, LogOut } from "lucide-react";
 import DashboardNav from "@/components/dashboard-nav";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppProvider } from "@/context/AppContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({ children }: PropsWithChildren) {
   return (
@@ -27,11 +29,31 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
           <header className="flex items-center justify-between p-4 bg-card md:bg-transparent border-b md:border-none sticky top-0 z-10">
             <SidebarTrigger className="md:hidden" />
             <div className="flex items-center gap-4 ml-auto">
-              <h2 className="text-lg font-semibold hidden sm:block">Welcome, User!</h2>
-              <Avatar>
-                  <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
-                  <AvatarFallback>U</AvatarFallback>
-              </Avatar>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                        <Avatar>
+                            <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
+                            <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                        <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">User</p>
+                            <p className="text-xs leading-none text-muted-foreground">user@example.com</p>
+                        </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem asChild>
+                        <Link href="/">
+                           <LogOut className="mr-2 h-4 w-4" />
+                           <span>Log out</span>
+                        </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
           </header>
           <main className="p-4 lg:p-6">{children}</main>
