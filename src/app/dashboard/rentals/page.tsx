@@ -37,6 +37,7 @@ export default function RentalsPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
@@ -53,15 +54,17 @@ export default function RentalsPage() {
       const isCustomerMatch = !selectedCustomerId || rental.customer_id === parseInt(selectedCustomerId);
       const isSiteMatch = !selectedSiteId || rental.site_id === parseInt(selectedSiteId);
       const isToolMatch = !selectedToolId || rental.tool_id === parseInt(selectedToolId);
+      const isStatusMatch = !selectedStatus || rental.status === selectedStatus;
 
-      return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch;
+      return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch && isStatusMatch;
     });
-  }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId]);
+  }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId, selectedStatus]);
   
   const handleResetFilters = () => {
     setSelectedCustomerId(null);
     setSelectedSiteId(null);
     setSelectedToolId(null);
+    setSelectedStatus(null);
     setDateRange(undefined);
   };
   
@@ -124,6 +127,8 @@ export default function RentalsPage() {
             setSelectedToolId={setSelectedToolId}
             dateRange={dateRange}
             setDateRange={setDateRange}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
             onReset={handleResetFilters}
         />
       </CardHeader>

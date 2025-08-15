@@ -16,6 +16,8 @@ interface FilterBarProps {
   setSelectedSiteId: (value: string | null) => void;
   selectedToolId: string | null;
   setSelectedToolId: (value: string | null) => void;
+  selectedStatus: string | null;
+  setSelectedStatus: (value: string | null) => void;
   dateRange: DateRange | undefined;
   setDateRange: (date: DateRange | undefined) => void;
   onReset: () => void;
@@ -31,12 +33,14 @@ export default function FilterBar({
   setSelectedSiteId,
   selectedToolId,
   setSelectedToolId,
+  selectedStatus,
+  setSelectedStatus,
   dateRange,
   setDateRange,
   onReset
 }: FilterBarProps) {
     
-  const hasActiveFilters = selectedCustomerId || selectedSiteId || selectedToolId || dateRange;
+  const hasActiveFilters = selectedCustomerId || selectedSiteId || selectedToolId || dateRange || selectedStatus;
 
   return (
     <div className="flex flex-wrap items-center gap-4 pt-4 border-t mt-4">
@@ -79,6 +83,17 @@ export default function FilterBar({
               {tool.name}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+       <Select value={selectedStatus || "all"} onValueChange={(value) => setSelectedStatus(value === "all" ? null : value)}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectValue placeholder="Filter by Status" />
+        </SelectTrigger>
+        <SelectContent>
+           <SelectItem value="all">All Statuses</SelectItem>
+           <SelectItem value="Rented">Rented</SelectItem>
+           <SelectItem value="Returned">Returned</SelectItem>
         </SelectContent>
       </Select>
 
