@@ -1,14 +1,19 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileDown } from "lucide-react";
-import { rentals, tools, customers } from "@/lib/placeholder-data";
 import { Badge } from "@/components/ui/badge";
-
-const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
-const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+import { useContext } from "react";
+import { AppContext } from "@/context/AppContext";
 
 export default function ReportsPage() {
+  const { rentals, tools, customers } = useContext(AppContext);
+
+  const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
+  const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+
   return (
     <Card>
       <CardHeader>
@@ -58,6 +63,13 @@ export default function ReportsPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {rentals.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="text-center h-24">
+                        No reports found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

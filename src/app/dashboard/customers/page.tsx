@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -23,23 +22,15 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-// NOTE: This is a placeholder type. In a real app, you'd fetch this from your database.
-type Customer = {
-  id: number;
-  name: string;
-  phone: string;
-  address: string;
-};
+import { AppContext, Customer } from "@/context/AppContext";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { customers, addCustomer, editCustomer, deleteCustomer } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -60,7 +51,7 @@ export default function CustomersPage() {
   }, [selectedCustomer]);
 
   const handleAddCustomer = () => {
-    setCustomers([...customers, { id: customers.length + 1, ...customerData }]);
+    addCustomer({ ...customerData, id: Date.now() });
     toast({ title: "Success!", description: "New customer has been added." });
     setIsAddDialogOpen(false);
     setCustomerData({ name: '', phone: '', address: '' });
@@ -68,7 +59,7 @@ export default function CustomersPage() {
 
   const handleEditCustomer = () => {
     if (selectedCustomer) {
-      setCustomers(customers.map(c => c.id === selectedCustomer.id ? { ...c, ...customerData } : c));
+      editCustomer({ ...selectedCustomer, ...customerData });
       toast({ title: "Success!", description: "Customer details have been updated." });
     }
     setIsEditDialogOpen(false);
@@ -77,7 +68,7 @@ export default function CustomersPage() {
 
   const handleDeleteCustomer = () => {
     if (selectedCustomer) {
-        setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
+        deleteCustomer(selectedCustomer.id);
         toast({ title: "Success!", description: "Customer has been deleted.", variant: "destructive" });
     }
     setIsDeleteDialogOpen(false);

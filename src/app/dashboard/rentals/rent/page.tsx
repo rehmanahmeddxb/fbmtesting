@@ -11,21 +11,48 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import React from "react";
-import { tools, customers, sites } from "@/lib/placeholder-data";
+import React, { useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { AppContext } from "@/context/AppContext";
 
 export default function RentToolPage() {
+  const { tools, customers, sites, addRental } = useContext(AppContext);
   const router = useRouter();
   const { toast } = useToast();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedToolId, setSelectedToolId] = React.useState<string>("");
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState<string>("");
+  const [selectedSiteId, setSelectedSiteId] = React.useState<string>("");
+  const [quantity, setQuantity] = React.useState(1);
 
   const selectedTool = tools.find(tool => tool.id === parseInt(selectedToolId));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTool || !selectedCustomerId || !selectedSiteId) {
+        toast({
+            title: "Error",
+            description: "Please fill out all fields.",
+            variant: "destructive"
+        });
+        return;
+    }
+    
+    addRental({
+        id: Date.now(),
+        invoice_number: `INV-${Date.now()}`,
+        tool_id: selectedTool.id,
+        customer_id: parseInt(selectedCustomerId),
+        site_id: parseInt(selectedSiteId),
+        issue_date: format(date || new Date(), "yyyy-MM-dd"),
+        return_date: null,
+        status: "Rented",
+        quantity: quantity,
+        rate: selectedTool.rate,
+        total_fee: null,
+    });
+
     toast({
         title: "Success!",
         description: "Tool has been rented and invoice generated.",
@@ -58,7 +85,7 @@ export default function RentToolPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <Select required>
+            <Select onValueChange={setSelectedCustomerId} required>
               <SelectTrigger id="customer">
                 <SelectValue placeholder="Select a customer" />
               </SelectTrigger>
@@ -73,7 +100,7 @@ export default function RentToolPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="site">Site</Label>
-            <Select required>
+            <Select onValueChange={setSelectedSiteId} required>
               <SelectTrigger id="site">
                 <SelectValue placeholder="Select a site" />
               </SelectTrigger>
@@ -114,11 +141,11 @@ export default function RentToolPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="quantity">Quantity</Label>
-            <Input id="quantity" type="number" placeholder="1" required min="1" max={selectedTool?.available_quantity} />
+            <Input id="quantity" type="number" placeholder="1" required min="1" max={selectedTool?.available_quantity} value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value))} />
           </div>
            <div className="space-y-2">
             <Label htmlFor="rate">Daily Rate ($)</Label>
-            <Input id="rate" type="number" placeholder="25.00" required step="0.01" defaultValue={selectedTool?.rate} />
+            <Input id="rate" type="number" placeholder="25.00" required step="0.01" value={selectedTool?.rate || 0} readOnly />
           </div>
            <div className="space-y-2">
             <Label htmlFor="manual-book-ref">Manual Book Ref.</Label>

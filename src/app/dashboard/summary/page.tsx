@@ -1,18 +1,10 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { tools } from "@/lib/placeholder-data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell } from "recharts";
-
-const totalTools = tools.reduce((sum, tool) => sum + tool.total_quantity, 0);
-const rentedTools = tools.reduce((sum, tool) => sum + (tool.total_quantity - tool.available_quantity), 0);
-const availableTools = totalTools - rentedTools;
-
-const chartData = [
-    { name: 'Rented', value: rentedTools, fill: 'hsl(var(--accent))' },
-    { name: 'Available', value: availableTools, fill: 'hsl(var(--primary))' },
-];
+import { useContext } from "react";
+import { AppContext } from "@/context/AppContext";
 
 const chartConfig = {
     value: {
@@ -29,6 +21,17 @@ const chartConfig = {
 }
 
 export default function SummaryPage() {
+    const { tools } = useContext(AppContext);
+
+    const totalTools = tools.reduce((sum, tool) => sum + tool.total_quantity, 0);
+    const rentedTools = tools.reduce((sum, tool) => sum + (tool.total_quantity - tool.available_quantity), 0);
+    const availableTools = totalTools - rentedTools;
+
+    const chartData = [
+        { name: 'Rented', value: rentedTools, fill: 'hsl(var(--accent))' },
+        { name: 'Available', value: availableTools, fill: 'hsl(var(--primary))' },
+    ];
+
     return (
         <div className="space-y-6">
             <Card>

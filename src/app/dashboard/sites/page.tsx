@@ -9,16 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-type Site = {
-  id: number;
-  name: string;
-};
+import { AppContext, Site } from "@/context/AppContext";
 
 export default function SitesPage() {
-  const [sites, setSites] = useState<Site[]>([]);
+  const { sites, addSite, editSite, deleteSite } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -27,7 +23,7 @@ export default function SitesPage() {
   const { toast } = useToast();
 
   const handleAddSite = () => {
-    setSites([...sites, { id: sites.length + 1, name: siteName }]);
+    addSite({ id: Date.now(), name: siteName });
     toast({ title: "Success!", description: "New site has been added." });
     setIsAddDialogOpen(false);
     setSiteName('');
@@ -35,7 +31,7 @@ export default function SitesPage() {
 
   const handleEditSite = () => {
     if (selectedSite) {
-      setSites(sites.map(s => s.id === selectedSite.id ? { ...s, name: siteName } : s));
+      editSite({ ...selectedSite, name: siteName });
       toast({ title: "Success!", description: "Site has been updated." });
     }
     setIsEditDialogOpen(false);
@@ -44,7 +40,7 @@ export default function SitesPage() {
   
   const handleDeleteSite = () => {
     if (selectedSite) {
-        setSites(sites.filter(s => s.id !== selectedSite.id));
+        deleteSite(selectedSite.id);
         toast({ title: "Success!", description: "Site has been deleted.", variant: "destructive" });
     }
     setIsDeleteDialogOpen(false);

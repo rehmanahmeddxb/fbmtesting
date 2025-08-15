@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,13 +13,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { rentals, tools, customers, sites } from "@/lib/placeholder-data";
-
-const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
-const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
-const getSiteName = (id: number) => sites.find(s => s.id === id)?.name || 'Unknown Site';
+import { useContext } from "react";
+import { AppContext } from "@/context/AppContext";
 
 export default function RentalsPage() {
+  const { rentals, tools, customers, sites, returnTool } = useContext(AppContext);
+
+  const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
+  const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+  const getSiteName = (id: number) => sites.find(s => s.id === id)?.name || 'Unknown Site';
+
   return (
     <Card>
       <CardHeader>
@@ -76,13 +81,20 @@ export default function RentalsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {rental.status === 'Rented' && <DropdownMenuItem>Return Tool</DropdownMenuItem>}
+                      {rental.status === 'Rented' && <DropdownMenuItem onClick={() => returnTool(rental.id)}>Return Tool</DropdownMenuItem>}
                       <DropdownMenuItem>View Details</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
+            {rentals.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                        No rentals found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

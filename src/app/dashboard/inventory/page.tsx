@@ -10,19 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { AppContext, Tool } from "@/context/AppContext";
 
-type Tool = {
-  id: number;
-  name: string;
-  total_quantity: number;
-  available_quantity: number;
-  rate: number;
-};
 
 export default function InventoryPage() {
-  const [tools, setTools] = useState<Tool[]>([]);
+  const { tools, addTool, editTool, deleteTool } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -44,7 +38,7 @@ export default function InventoryPage() {
   }, [selectedTool]);
 
   const handleAddTool = () => {
-    setTools([...tools, { id: tools.length + 1, ...toolData, available_quantity: toolData.total_quantity }]);
+    addTool({ ...toolData, id: Date.now(), available_quantity: toolData.total_quantity });
     toast({ title: "Success!", description: "New tool has been added." });
     setIsAddDialogOpen(false);
     setToolData({ name: '', total_quantity: 1, available_quantity: 1, rate: 0 });
@@ -52,7 +46,7 @@ export default function InventoryPage() {
 
   const handleEditTool = () => {
     if (selectedTool) {
-      setTools(tools.map(t => t.id === selectedTool.id ? { ...t, ...toolData } : t));
+      editTool({ ...selectedTool, ...toolData });
       toast({ title: "Success!", description: "Tool details have been updated." });
     }
     setIsEditDialogOpen(false);
@@ -61,7 +55,7 @@ export default function InventoryPage() {
 
   const handleDeleteTool = () => {
     if (selectedTool) {
-      setTools(tools.filter(t => t.id !== selectedTool.id));
+      deleteTool(selectedTool.id);
       toast({ title: "Success!", description: "Tool has been deleted.", variant: "destructive" });
     }
     setIsDeleteDialogOpen(false);

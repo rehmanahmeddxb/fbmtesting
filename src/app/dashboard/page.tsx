@@ -1,12 +1,17 @@
+'use client';
+
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Wrench, Users, ListOrdered, ArrowUpRight } from "lucide-react";
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
-import { rentals, tools, customers } from "@/lib/placeholder-data";
+import { useContext } from "react";
+import { AppContext } from "@/context/AppContext";
 
 export default function DashboardPage() {
+    const { rentals, tools, customers } = useContext(AppContext);
+    
     const activeRentals = rentals.filter(r => r.status === 'Rented');
     const recentRentals = [...activeRentals].sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()).slice(0, 5);
 
@@ -40,7 +45,7 @@ export default function DashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{activeRentals.length}</div>
                         <p className="text-xs text-muted-foreground">
-                           {tools.reduce((sum, tool) => sum + tool.total_quantity - tool.available_quantity, 0)} items currently out
+                           {tools.reduce((sum, tool) => sum + (tool.total_quantity - tool.available_quantity), 0)} items currently out
                         </p>
                     </CardContent>
                 </Card>
@@ -97,6 +102,13 @@ export default function DashboardPage() {
                                     </TableCell>
                                 </TableRow>
                             ))}
+                            {recentRentals.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-24">
+                                        No recent rentals.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
