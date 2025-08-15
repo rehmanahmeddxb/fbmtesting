@@ -30,12 +30,12 @@ export default function LoginForm() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
-            <Input id="username" type="text" placeholder="admin" required defaultValue="admin" />
+            <Input id="username" type="text" placeholder="Enter your username" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <Input id="password" type={showPassword ? "text" : "password"} required defaultValue="password" />
+              <Input id="password" type={showPassword ? "text" : "password"} required placeholder="Enter your password" />
               <Button
                 type="button"
                 variant="ghost"

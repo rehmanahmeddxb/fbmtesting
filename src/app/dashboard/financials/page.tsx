@@ -7,18 +7,18 @@ import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 
-const totalRentalValue = 810.00;
-const totalReceived = 810.00;
-const totalPending = 0.00;
+const totalRentalValue = 0;
+const totalReceived = 0;
+const totalPending = 0;
 
 const data = [
-    { name: "Jan", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Feb", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Mar", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Apr", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "May", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Jun", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Jul", total: 810 },
+    { name: "Jan", total: 0 },
+    { name: "Feb", total: 0 },
+    { name: "Mar", total: 0 },
+    { name: "Apr", total: 0 },
+    { name: "May", total: 0 },
+    { name: "Jun", total: 0 },
+    { name: "Jul", total: 0 },
     { name: "Aug", total: 0 },
     { name: "Sep", total: 0 },
     { name: "Oct", total: 0 },

@@ -25,10 +25,10 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
         <header className="flex items-center justify-between p-4 bg-card md:bg-transparent border-b md:border-none sticky top-0 z-10">
           <SidebarTrigger className="md:hidden" />
           <div className="flex items-center gap-4 ml-auto">
-             <h2 className="text-lg font-semibold hidden sm:block">Welcome, Rehman Ahmed!</h2>
+             <h2 className="text-lg font-semibold hidden sm:block">Welcome, User!</h2>
              <Avatar>
-                <AvatarImage src="https://placehold.co/100x100.png" alt="Rehman Ahmed" data-ai-hint="male portrait" />
-                <AvatarFallback>RA</AvatarFallback>
+                <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
+                <AvatarFallback>U</AvatarFallback>
             </Avatar>
           </div>
         </header>
