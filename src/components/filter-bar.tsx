@@ -40,12 +40,12 @@ export default function FilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-4 pt-4 border-t mt-4">
-      <Select value={selectedCustomerId || ""} onValueChange={(value) => setSelectedCustomerId(value || null)}>
+      <Select value={selectedCustomerId || "all"} onValueChange={(value) => setSelectedCustomerId(value === "all" ? null : value)}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by Customer" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Customers</SelectItem>
+          <SelectItem value="all">All Customers</SelectItem>
           {customers.map(customer => (
             <SelectItem key={customer.id} value={String(customer.id)}>
               {customer.name}
@@ -54,12 +54,12 @@ export default function FilterBar({
         </SelectContent>
       </Select>
 
-      <Select value={selectedSiteId || ""} onValueChange={(value) => setSelectedSiteId(value || null)}>
+      <Select value={selectedSiteId || "all"} onValueChange={(value) => setSelectedSiteId(value === "all" ? null : value)}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by Site" />
         </SelectTrigger>
         <SelectContent>
-           <SelectItem value="">All Sites</SelectItem>
+           <SelectItem value="all">All Sites</SelectItem>
           {sites.map(site => (
             <SelectItem key={site.id} value={String(site.id)}>
               {site.name}
@@ -68,12 +68,12 @@ export default function FilterBar({
         </SelectContent>
       </Select>
 
-      <Select value={selectedToolId || ""} onValueChange={(value) => setSelectedToolId(value || null)}>
+      <Select value={selectedToolId || "all"} onValueChange={(value) => setSelectedToolId(value === "all" ? null : value)}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by Tool" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Tools</SelectItem>
+          <SelectItem value="all">All Tools</SelectItem>
           {tools.map(tool => (
             <SelectItem key={tool.id} value={String(tool.id)}>
               {tool.name}
