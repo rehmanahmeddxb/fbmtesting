@@ -42,9 +42,7 @@ export default function RentToolPage() {
             }
             if (field === 'quantity') {
                  const newQuantity = parseInt(value) || 1;
-                 const maxQuantity = item.tool?.available_quantity || 0;
-                 // Ensure quantity is at least 1 and not more than available
-                 return { ...item, quantity: Math.max(1, Math.min(newQuantity, maxQuantity)) };
+                 return { ...item, quantity: newQuantity };
             }
         }
         return item;
@@ -71,6 +69,18 @@ export default function RentToolPage() {
         return;
     }
     
+    // Final check for quantities before submitting
+    for (const item of rentalItems) {
+        if (item.quantity > (item.tool?.available_quantity || 0)) {
+             toast({
+                title: "Error",
+                description: `Quantity for '${item.tool?.name}' exceeds available stock.`,
+                variant: "destructive"
+            });
+            return;
+        }
+    }
+
     addRental(
         rentalItems.map(item => ({
             tool_id: parseInt(item.toolId),

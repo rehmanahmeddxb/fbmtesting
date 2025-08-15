@@ -1,1 +1,54 @@
-[]
+[
+  {
+    "customer_id": 1755247734047,
+    "site_id": 1755247748311,
+    "issue_date": "2025-08-15",
+    "id": 3510495517200,
+    "invoice_number": "INV-1755247797753",
+    "tool_id": 1755247719447,
+    "quantity": 30,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  },
+  {
+    "customer_id": 1755247734047,
+    "site_id": 1755247748311,
+    "issue_date": "2025-08-15",
+    "id": 3510495525040,
+    "invoice_number": "INV-1755247797753",
+    "tool_id": 1755247727287,
+    "quantity": 30,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  },
+  {
+    "customer_id": 1755247738983,
+    "site_id": 1755247752598,
+    "issue_date": "2025-08-15",
+    "id": 3510495546102,
+    "invoice_number": "INV-1755247826655",
+    "tool_id": 1755247719447,
+    "quantity": 20,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  },
+  {
+    "customer_id": 1755247738983,
+    "site_id": 1755247752598,
+    "issue_date": "2025-08-15",
+    "id": 3510495553942,
+    "invoice_number": "INV-1755247826655",
+    "tool_id": 1755247727287,
+    "quantity": 19,
+    "rate": 0,
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
+  }
+]
