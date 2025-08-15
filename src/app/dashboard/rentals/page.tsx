@@ -91,6 +91,7 @@ export default function RentalsPage() {
             <TableRow>
               <TableHead>Invoice #</TableHead>
               <TableHead>Tool</TableHead>
+              <TableHead>Qty</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Issue Date</TableHead>
@@ -104,6 +105,7 @@ export default function RentalsPage() {
               <TableRow key={rental.id}>
                 <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
                 <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
+                <TableCell>{rental.quantity}</TableCell>
                 <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rental.site_id)}</TableCell>
                 <TableCell>{rental.issue_date}</TableCell>
@@ -132,14 +134,14 @@ export default function RentalsPage() {
             ))}
             {rentals.length > 0 && filteredRentals.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24">
+                    <TableCell colSpan={9} className="text-center h-24">
                        No results found for the selected filters.
                     </TableCell>
                 </TableRow>
             )}
             {rentals.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24">
+                    <TableCell colSpan={9} className="text-center h-24">
                         No rentals found.
                     </TableCell>
                 </TableRow>

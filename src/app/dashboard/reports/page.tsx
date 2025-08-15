@@ -38,6 +38,7 @@ export default function ReportsPage() {
             <TableRow>
               <TableHead>Invoice #</TableHead>
               <TableHead>Tool</TableHead>
+              <TableHead>Qty</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Issue Date</TableHead>
               <TableHead>Return Date</TableHead>
@@ -50,6 +51,7 @@ export default function ReportsPage() {
               <TableRow key={rental.id}>
                 <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
                 <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
+                <TableCell>{rental.quantity}</TableCell>
                 <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                 <TableCell>{rental.issue_date}</TableCell>
                 <TableCell>{rental.return_date || 'N/A'}</TableCell>
@@ -65,7 +67,7 @@ export default function ReportsPage() {
             ))}
             {rentals.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center h-24">
+                    <TableCell colSpan={8} className="text-center h-24">
                         No reports found.
                     </TableCell>
                 </TableRow>
