@@ -41,11 +41,10 @@ export default function RentToolPage() {
                 return { ...item, toolId: value, tool: selectedTool, quantity: 1 }; // Reset quantity when tool changes
             }
             if (field === 'quantity') {
-                 const newQuantity = parseInt(value) || 0;
+                 const newQuantity = parseInt(value) || 1;
                  const maxQuantity = item.tool?.available_quantity || 0;
-                 if (newQuantity < 1) return { ...item, quantity: 1 };
-                 if (newQuantity > maxQuantity) return { ...item, quantity: maxQuantity };
-                 return { ...item, quantity: newQuantity };
+                 // Ensure quantity is at least 1 and not more than available
+                 return { ...item, quantity: Math.max(1, Math.min(newQuantity, maxQuantity)) };
             }
         }
         return item;
@@ -63,10 +62,10 @@ export default function RentToolPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId)) {
+    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId || item.quantity <= 0)) {
         toast({
             title: "Error",
-            description: "Please select a customer, a site, and a tool for each item.",
+            description: "Please select a customer, a site, and a valid tool & quantity for each item.",
             variant: "destructive"
         });
         return;
@@ -209,6 +208,7 @@ export default function RentToolPage() {
                                 <Trash2 className="h-4 w-4"/>
                             </Button>
                         )}
+                         {index === 0 && rentalItems.length === 1 && <div className="w-10"></div>}
                     </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addRentalItem}>

@@ -182,20 +182,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools, customers: newCustomers, sites, rentals });
   };
   const deleteCustomer = (id: number) => {
-    // Find active rentals for this customer
-    const customerRentals = rentals.filter(r => r.customer_id === id && r.status === 'Rented');
     let updatedTools = [...tools];
+    const customerActiveRentals = rentals.filter(r => r.customer_id === id && r.status === 'Rented');
 
-    // Return rented items to inventory
-    customerRentals.forEach(rental => {
-        updatedTools = updatedTools.map(tool => 
-            tool.id === rental.tool_id 
-            ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
-            : tool
-        );
+    // Return all items from active rentals to inventory before deleting the customer
+    customerActiveRentals.forEach(rental => {
+        const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
+        if (toolIndex !== -1) {
+            updatedTools[toolIndex].available_quantity += rental.quantity;
+        }
     });
 
-    // Remove customer and their rentals
+    // Remove the customer and all their associated rental records
     const newCustomers = customers.filter(customer => customer.id !== id);
     const newRentals = rentals.filter(rental => rental.customer_id !== id);
     
@@ -218,6 +216,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools, customers, sites: newSites, rentals });
   };
   const deleteSite = (id: number) => {
+    // Note: Deleting a site does not affect inventory, just removes the location option.
     const newSites = sites.filter(site => site.id !== id);
     setSites(newSites);
     saveData({ tools, customers, sites: newSites, rentals });
@@ -261,34 +260,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const issueDate = new Date(rentalToUpdate.issue_date);
     const returnDate = new Date();
-    const daysRented = differenceInCalendarDays(returnDate, issueDate) + 1;
-    const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * (daysRented > 0 ? daysRented : 1);
+    // Ensure rental period is at least 1 day
+    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate) + 1);
+    const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * daysRented;
   
     if (quantityToReturn >= rentalToUpdate.quantity) {
+      // Full return of this specific rental record
       updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? {
               ...r,
               status: 'Returned',
               return_date: format(returnDate, "yyyy-MM-dd"),
-              total_fee: feeForReturnedItems,
-              quantity: quantityToReturn, // ensure it matches the actual returned quantity
+              total_fee: (r.total_fee || 0) + feeForReturnedItems,
             }
           : r
       );
     } else {
-      // 1. Update the original rental quantity
+      // Partial return: 1. Update the original rental's quantity
       updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? { ...r, quantity: r.quantity - quantityToReturn }
           : r
       );
       
-      // 2. Create a new rental record for the returned items
+      // 2. Create a new, separate "Returned" rental record for the returned items
       const returnedRental: Rental = {
         ...rentalToUpdate,
-        id: Date.now(), // New unique ID
-        invoice_number: `${rentalToUpdate.invoice_number}-RTN`,
+        id: Date.now(), // New unique ID for the returned portion
+        invoice_number: rentalToUpdate.invoice_number, // Keep same invoice for tracking
         quantity: quantityToReturn,
         status: 'Returned',
         return_date: format(returnDate, "yyyy-MM-dd"),
@@ -316,34 +316,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let updatedRentals = [...rentals];
 
     if (options.rentals) {
-        // Return all rented items to inventory before clearing rentals
-        const rentedItems = rentals.filter(r => r.status === 'Rented');
+        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
         rentedItems.forEach(rental => {
-            updatedTools = updatedTools.map(tool => 
-                tool.id === rental.tool_id
-                ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
-                : tool
-            )
+            const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
+            if (toolIndex !== -1) {
+                 updatedTools[toolIndex].available_quantity += rental.quantity;
+            }
         });
         updatedRentals = [];
     }
     if (options.tools) {
-        // If we clear tools, we must also clear rentals
         updatedTools = [];
-        updatedRentals = [];
+        updatedRentals = []; // Can't have rentals without tools
     }
     if (options.customers) {
-        // If we clear customers, we must also clear rentals and update inventory
-         const rentedItems = rentals.filter(r => r.status === 'Rented');
+        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
          rentedItems.forEach(rental => {
-             updatedTools = updatedTools.map(tool => 
-                 tool.id === rental.tool_id
-                 ? { ...tool, available_quantity: tool.available_quantity + rental.quantity }
-                 : tool
-             )
+             const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
+             if (toolIndex !== -1) {
+                  updatedTools[toolIndex].available_quantity += rental.quantity;
+             }
          });
         updatedCustomers = [];
-        updatedRentals = [];
+        updatedRentals = []; // Can't have rentals without customers
     }
     if(options.sites) {
         updatedSites = [];
@@ -393,5 +388,3 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     </AppContext.Provider>
   );
 };
-
-    
