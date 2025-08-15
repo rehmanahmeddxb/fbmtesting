@@ -14,6 +14,7 @@ import {
   AreaChart,
   FileText,
   CircleDollarSign,
+  Settings,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/dashboard/summary', label: 'Summary', icon: AreaChart },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText },
   { href: '/dashboard/financials', label: 'Financials', icon: CircleDollarSign },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function DashboardNav() {
