@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Site } from "@/context/AppContext";
+import Link from "next/link";
 
 export default function SitesPage() {
   const { sites, addSite, editSite, deleteSite } = useContext(AppContext);
@@ -83,6 +84,7 @@ export default function SitesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild><Link href={`/dashboard/sites/${site.id}`}>View Details</Link></DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => { setSelectedSite(site); setSiteName(site.name); setIsEditDialogOpen(true); }}>Edit</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={() => { setSelectedSite(site); setIsDeleteDialogOpen(true); }}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>

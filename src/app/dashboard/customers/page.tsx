@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Customer } from "@/context/AppContext";
+import Link from "next/link";
 
 export default function CustomersPage() {
   const { customers, addCustomer, editCustomer, deleteCustomer } = useContext(AppContext);
@@ -115,6 +116,7 @@ export default function CustomersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild><Link href={`/dashboard/customers/${customer.id}`}>View Details</Link></DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => { setSelectedCustomer(customer); setIsEditDialogOpen(true); }}>Edit</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={() => { setSelectedCustomer(customer); setIsDeleteDialogOpen(true); }}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
