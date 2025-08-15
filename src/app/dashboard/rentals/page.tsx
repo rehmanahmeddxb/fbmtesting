@@ -13,15 +13,43 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useContext } from "react";
+import { useContext, useMemo, useState } from "react";
 import { AppContext } from "@/context/AppContext";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval, parseISO } from "date-fns";
+import FilterBar from "@/components/filter-bar";
 
 export default function RentalsPage() {
   const { rentals, tools, customers, sites, returnTool } = useContext(AppContext);
 
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
   const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
   const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
   const getSiteName = (id: number) => sites.find(s => s.id === id)?.name || 'Unknown Site';
+
+  const filteredRentals = useMemo(() => {
+    return rentals.filter(rental => {
+      const issueDate = parseISO(rental.issue_date);
+      const isDateInRange = !dateRange?.from || isWithinInterval(issueDate, { start: dateRange.from, end: dateRange.to || dateRange.from });
+      const isCustomerMatch = !selectedCustomerId || rental.customer_id === parseInt(selectedCustomerId);
+      const isSiteMatch = !selectedSiteId || rental.site_id === parseInt(selectedSiteId);
+      const isToolMatch = !selectedToolId || rental.tool_id === parseInt(selectedToolId);
+
+      return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch;
+    });
+  }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId]);
+  
+  const handleResetFilters = () => {
+    setSelectedCustomerId(null);
+    setSelectedSiteId(null);
+    setSelectedToolId(null);
+    setDateRange(undefined);
+  };
+
 
   return (
     <Card>
@@ -42,6 +70,20 @@ export default function RentalsPage() {
             </Button>
           </div>
         </div>
+         <FilterBar
+            customers={customers}
+            sites={sites}
+            tools={tools}
+            selectedCustomerId={selectedCustomerId}
+            setSelectedCustomerId={setSelectedCustomerId}
+            selectedSiteId={selectedSiteId}
+            setSelectedSiteId={setSelectedSiteId}
+            selectedToolId={selectedToolId}
+            setSelectedToolId={setSelectedToolId}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            onReset={handleResetFilters}
+        />
       </CardHeader>
       <CardContent>
         <Table>
@@ -58,7 +100,7 @@ export default function RentalsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rentals.map((rental) => (
+            {filteredRentals.map((rental) => (
               <TableRow key={rental.id}>
                 <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
                 <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
@@ -88,6 +130,13 @@ export default function RentalsPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {rentals.length > 0 && filteredRentals.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                       No results found for the selected filters.
+                    </TableCell>
+                </TableRow>
+            )}
             {rentals.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={8} className="text-center h-24">
