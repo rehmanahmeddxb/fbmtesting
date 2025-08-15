@@ -42,10 +42,10 @@ export default function RentToolPage() {
             }
             if (field === 'quantity') {
                  const newQuantity = parseInt(value) || 0;
-                 const maxQuantity = item.tool?.available_quantity || 1;
-                 // Ensure quantity is at least 1 and not more than available
-                 if (newQuantity < 1) return { ...item, quantity: 1};
-                 return { ...item, quantity: Math.min(newQuantity, maxQuantity) };
+                 const maxQuantity = item.tool?.available_quantity || 0;
+                 if (newQuantity < 1) return { ...item, quantity: 1 };
+                 if (newQuantity > maxQuantity) return { ...item, quantity: maxQuantity };
+                 return { ...item, quantity: newQuantity };
             }
         }
         return item;

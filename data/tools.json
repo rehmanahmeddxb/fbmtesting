@@ -3,14 +3,14 @@
     "name": "wheel barrow",
     "total_quantity": 100,
     "rate": 0,
-    "id": 1755246303607,
-    "available_quantity": 70
+    "id": 1755247051190,
+    "available_quantity": 50
   },
   {
     "name": "shovel",
     "total_quantity": 100,
     "rate": 0,
-    "id": 1755246310375,
-    "available_quantity": 80
+    "id": 1755247059870,
+    "available_quantity": 51
   }
 ]
