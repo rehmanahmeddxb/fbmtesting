@@ -42,12 +42,9 @@ export default function DashboardNav() {
             <SidebarMenuButton
               isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')}
               tooltip={item.label}
-              asChild
             >
-              <div>
                 <item.icon />
                 <span>{item.label}</span>
-              </div>
             </SidebarMenuButton>
           </Link>
         </SidebarMenuItem>

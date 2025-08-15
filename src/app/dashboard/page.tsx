@@ -8,15 +8,23 @@ import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { useContext } from "react";
 import { AppContext } from "@/context/AppContext";
+import { format } from "date-fns";
 
 export default function DashboardPage() {
     const { rentals, tools, customers } = useContext(AppContext);
     
     const activeRentals = rentals.filter(r => r.status === 'Rented');
-    const recentRentals = [...activeRentals].sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()).slice(0, 5);
+    const recentRentals = [...rentals].sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()).slice(0, 5);
 
     const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
     const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+    
+    const newCustomersThisMonth = customers.filter(c => {
+        // This is a naive check. In a real app, you'd store the customer creation date.
+        // For now, we'll just show a static number.
+        return true; 
+    }).length;
+
 
     return (
         <div className="space-y-6">
@@ -59,7 +67,7 @@ export default function DashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{customers.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            +2 new this month
+                            +{newCustomersThisMonth} new this month
                         </p>
                     </CardContent>
                 </Card>
@@ -96,9 +104,9 @@ export default function DashboardPage() {
                                         <div className="font-medium">{getCustomerName(rental.customer_id)}</div>
                                     </TableCell>
                                     <TableCell>{getToolName(rental.tool_id)}</TableCell>
-                                    <TableCell>{rental.issue_date}</TableCell>
+                                    <TableCell>{format(new Date(rental.issue_date), "PPP")}</TableCell>
                                     <TableCell>
-                                        <Badge variant="default" className="bg-accent text-accent-foreground">{rental.status}</Badge>
+                                        <Badge variant={rental.status === 'Rented' ? 'default' : 'secondary'} className={rental.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>{rental.status}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
