@@ -173,7 +173,9 @@ export default function RentalsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       {rental.status === 'Rented' && <DropdownMenuItem onClick={() => openReturnDialog(rental)}>Return Tool</DropdownMenuItem>}
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/rentals/${rental.invoice_number}`}>View Details</Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
