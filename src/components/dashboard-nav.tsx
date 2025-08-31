@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -16,6 +17,7 @@ import {
   CircleDollarSign,
   Settings,
   ListChecks,
+  DatabaseBackup,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -31,6 +33,7 @@ const navItems = [
   { href: '/dashboard/reports', label: 'Reports', icon: FileText },
   { href: '/dashboard/financials', label: 'Financials', icon: CircleDollarSign },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard/backup', label: 'Backup & Restore', icon: DatabaseBackup },
 ];
 
 export default function DashboardNav() {
