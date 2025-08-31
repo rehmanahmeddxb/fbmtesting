@@ -24,6 +24,19 @@ export default function DashboardPage() {
         // For now, we'll just show a static number.
         return true; 
     }).length;
+    
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'Rented':
+                return <Badge variant="default" className="bg-accent text-accent-foreground">{status}</Badge>;
+            case 'Returned':
+                return <Badge variant="secondary">{status}</Badge>;
+            case 'Returned Pending':
+                return <Badge variant="destructive">{status}</Badge>;
+            default:
+                return <Badge>{status}</Badge>;
+        }
+    }
 
 
     return (
@@ -106,7 +119,7 @@ export default function DashboardPage() {
                                     <TableCell>{getToolName(rental.tool_id)}</TableCell>
                                     <TableCell>{format(new Date(rental.issue_date), "PPP")}</TableCell>
                                     <TableCell>
-                                        <Badge variant={rental.status === 'Rented' ? 'default' : 'secondary'} className={rental.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>{rental.status}</Badge>
+                                        {getStatusBadge(rental.status)}
                                     </TableCell>
                                 </TableRow>
                             ))}

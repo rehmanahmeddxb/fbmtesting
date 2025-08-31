@@ -36,6 +36,19 @@ export default function ReportsPage() {
 
   const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
   const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+  
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'Rented':
+            return <Badge variant="default" className="bg-accent text-accent-foreground">{status}</Badge>;
+        case 'Returned':
+            return <Badge variant="secondary">{status}</Badge>;
+        case 'Returned Pending':
+            return <Badge variant="destructive">{status}</Badge>;
+        default:
+            return <Badge>{status}</Badge>;
+    }
+  }
 
   const handlePdfColumnToggle = (columnId: ExportColumn['id'], checked: boolean) => {
     const newSelected = new Set(selectedPdfColumns);
@@ -151,9 +164,7 @@ export default function ReportsPage() {
                     {rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={rental.status === 'Rented' ? 'default' : 'secondary'} className={rental.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>
-                      {rental.status}
-                    </Badge>
+                    {getStatusBadge(rental.status)}
                   </TableCell>
                 </TableRow>
               ))}

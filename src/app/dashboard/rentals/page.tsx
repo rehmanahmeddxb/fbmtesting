@@ -113,9 +113,9 @@ export default function RentalsPage() {
         const firstRental = group[0];
         const overallStatus = group.every(r => r.status === 'Returned') 
                                 ? 'Returned' 
-                                : group.some(r => r.status === 'Rented')
-                                ? 'Rented'
-                                : 'Pending';
+                                : group.some(r => r.status === 'Returned Pending')
+                                ? 'Pending'
+                                : 'Rented';
 
         return {
             ...firstRental,
@@ -203,10 +203,8 @@ export default function RentalsPage() {
             return <Badge variant="default" className="bg-accent text-accent-foreground">{status}</Badge>;
         case 'Returned':
             return <Badge variant="secondary">{status}</Badge>;
-        case 'Returned Pending':
-            return <Badge variant="destructive">{status}</Badge>;
         case 'Pending':
-            return <Badge variant="outline">Mixed Status</Badge>;
+            return <Badge variant="destructive">Returned Pending</Badge>;
         default:
             return <Badge>{status}</Badge>;
     }

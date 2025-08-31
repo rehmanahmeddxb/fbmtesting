@@ -87,6 +87,19 @@ export default function ToolTrackingPage() {
         setDateRange(undefined);
     };
 
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'Rented':
+                return <Badge variant="default" className="bg-accent text-accent-foreground">{status}</Badge>;
+            case 'Returned':
+                return <Badge variant="secondary">{status}</Badge>;
+            case 'Returned Pending':
+                return <Badge variant="destructive">{status}</Badge>;
+            default:
+                return <Badge>{status}</Badge>;
+        }
+    }
+
     const handleExportColumnToggle = (columnId: ExportColumn['id'], checked: boolean) => {
       const newSelected = new Set(selectedExportColumns);
       if (checked) {
@@ -182,9 +195,7 @@ export default function ToolTrackingPage() {
                                     <TableCell>{getToolName(item.toolId)}</TableCell>
                                     <TableCell className="text-center">{item.totalQuantity}</TableCell>
                                     <TableCell>
-                                        <Badge variant={item.status === 'Rented' ? 'default' : item.status === 'Returned' ? 'secondary' : 'destructive'} className={item.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>
-                                            {item.status}
-                                        </Badge>
+                                        {getStatusBadge(item.status)}
                                     </TableCell>
                                 </TableRow>
                             ))}
