@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
@@ -37,12 +38,14 @@ export type Rental = {
     quantity: number;
     rate: number;
     total_fee: number | null;
+    comment?: string;
 };
 
 type RentalItemInput = {
     tool_id: number;
     quantity: number;
     rate: number;
+    comment?: string;
 }
 
 type RentalOrderInput = {
@@ -111,6 +114,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [sites, setSites] = useState<Site[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
 
   // Load data on initial render
   useEffect(() => {
@@ -237,6 +242,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         tool_id: item.tool_id,
         quantity: item.quantity,
         rate: item.rate,
+        comment: item.comment,
         status: 'Rented',
         return_date: null,
         total_fee: null,

@@ -81,6 +81,7 @@ export default function RentalDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tool</TableHead>
+                <TableHead>Comments</TableHead>
                 <TableHead className="text-center">Quantity</TableHead>
                 <TableHead className="text-center">Daily Rate</TableHead>
                 <TableHead className="text-center">Status</TableHead>
@@ -92,6 +93,7 @@ export default function RentalDetailPage() {
               {invoiceRentals.map((rental) => (
                 <TableRow key={rental.id}>
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
+                  <TableCell className="text-muted-foreground">{rental.comment || 'N/A'}</TableCell>
                   <TableCell className="text-center">{rental.quantity}</TableCell>
                    <TableCell className="text-center">${rental.rate.toFixed(2)}</TableCell>
                    <TableCell className="text-center">

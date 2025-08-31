@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,13 @@ import React, { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Tool } from "@/context/AppContext";
+import { Textarea } from "@/components/ui/textarea";
 
 type RentalItem = {
     id: number;
     toolId: string;
     quantity: string;
+    comment: string;
     tool: Tool | undefined;
 };
 
@@ -31,28 +34,31 @@ export default function RentToolPage() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [manualBookRef, setManualBookRef] = useState<string>("");
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([
-    { id: Date.now(), toolId: "", quantity: "", tool: undefined }
+    { id: Date.now(), toolId: "", quantity: "", comment: "", tool: undefined }
   ]);
 
-  const handleItemChange = (id: number, field: 'toolId' | 'quantity', value: string) => {
+  const handleItemChange = (id: number, field: 'toolId' | 'quantity' | 'comment', value: string) => {
     setRentalItems(items => items.map(item => {
         if (item.id === id) {
             if (field === 'toolId') {
                 const selectedTool = tools.find(t => t.id === parseInt(value));
                 return { ...item, toolId: value, tool: selectedTool, quantity: "1" };
             }
-            if (field === 'quantity') {
-                 if (value === "" || (parseInt(value) > 0 && parseInt(value) <= (item.tool?.available_quantity || 0))) {
-                     return { ...item, quantity: value };
-                 }
-                 // If value is invalid, we can choose to ignore it or cap it.
-                 // For now, let's just return the item as is to avoid invalid state.
-                 toast({
-                    title: "Invalid Quantity",
-                    description: `You can rent up to ${item.tool?.available_quantity} items.`,
-                    variant: "destructive"
-                 })
-                 return item;
+             if (field === 'quantity') {
+                const newQuantity = parseInt(value);
+                const available = item.tool?.available_quantity || 0;
+                if (value === "" || (newQuantity > 0 && newQuantity <= available)) {
+                    return { ...item, quantity: value };
+                }
+                toast({
+                   title: "Invalid Quantity",
+                   description: `You can rent up to ${available} items.`,
+                   variant: "destructive"
+                })
+                return { ...item, quantity: String(available) }; // Cap at max
+            }
+            if (field === 'comment') {
+                return { ...item, comment: value };
             }
         }
         return item;
@@ -60,7 +66,7 @@ export default function RentToolPage() {
   };
   
   const addRentalItem = () => {
-    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: "", tool: undefined }]);
+    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: "", comment: "", tool: undefined }]);
   }
 
   const removeRentalItem = (id: number) => {
@@ -104,7 +110,8 @@ export default function RentToolPage() {
         rentalItems.map(item => ({
             tool_id: parseInt(item.toolId),
             quantity: parseInt(item.quantity),
-            rate: item.tool!.rate
+            rate: item.tool!.rate,
+            comment: item.comment,
         })),
         {
             customer_id: parseInt(selectedCustomerId),
@@ -205,7 +212,7 @@ export default function RentToolPage() {
             <div className="space-y-4">
                  <Label className="text-lg font-medium">Tools</Label>
                 {rentalItems.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-[1fr_auto_auto_auto] items-end gap-4 p-4 border rounded-md">
+                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_2fr_auto] items-start gap-4 p-4 border rounded-md">
                         <div className="space-y-2">
                             <Label htmlFor={`tool-${item.id}`}>Tool</Label>
                             <Select 
@@ -235,29 +242,31 @@ export default function RentToolPage() {
                                 max={item.tool?.available_quantity} 
                                 value={item.quantity} 
                                 disabled={!item.tool}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Backspace' && item.quantity.length === 1) {
-                                      e.preventDefault();
-                                      handleItemChange(item.id, 'quantity', '');
-                                    }
-                                  }}
-                                onChange={(e) => {
-                                    if (e.target.value === '' || (parseInt(e.target.value) > 0)) {
-                                        handleItemChange(item.id, 'quantity', e.target.value)
-                                    }
-                                }}
+                                onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
                             />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor={`rate-${item.id}`}>Daily Rate ($)</Label>
                             <Input id={`rate-${item.id}`} type="number" value={item.tool?.rate ?? 0} readOnly />
                         </div>
-                        {rentalItems.length > 1 && (
-                            <Button variant="ghost" size="icon" onClick={() => removeRentalItem(item.id)} className="text-destructive hover:bg-destructive/10">
-                                <Trash2 className="h-4 w-4"/>
-                            </Button>
-                        )}
-                         {index === 0 && rentalItems.length === 1 && <div className="w-10"></div>}
+                        <div className="space-y-2">
+                           <Label htmlFor={`comment-${item.id}`}>Comments (Condition)</Label>
+                           <Textarea
+                             id={`comment-${item.id}`}
+                             placeholder="e.g., Minor scratches on handle"
+                             value={item.comment}
+                             onChange={(e) => handleItemChange(item.id, 'comment', e.target.value)}
+                             className="h-[38px]"
+                           />
+                        </div>
+                        <div className="flex items-end h-full">
+                          {rentalItems.length > 1 && (
+                              <Button variant="ghost" size="icon" onClick={() => removeRentalItem(item.id)} className="text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4"/>
+                              </Button>
+                          )}
+                          {index === 0 && rentalItems.length === 1 && <div className="w-10"></div>}
+                        </div>
                     </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addRentalItem}>
