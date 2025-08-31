@@ -67,7 +67,7 @@ interface AppContextType {
   customers: Customer[];
   sites: Site[];
   rentals: Rental[];
-  addTool: (tool: Tool) => void;
+  addTool: (tool: Tool) => boolean;
   editTool: (tool: Tool) => void;
   deleteTool: (id: number) => boolean;
   addCustomer: (customer: Customer) => void;
@@ -88,7 +88,7 @@ export const AppContext = createContext<AppContextType>({
   customers: [],
   sites: [],
   rentals: [],
-  addTool: () => {},
+  addTool: () => false,
   editTool: () => {},
   deleteTool: () => false,
   addCustomer: () => {},
@@ -149,10 +149,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Tool CRUD
-  const addTool = (tool: Tool) => {
+  const addTool = (tool: Tool): boolean => {
+    const toolExists = tools.some(t => t.name.toLowerCase() === tool.name.toLowerCase());
+    if (toolExists) {
+        return false; // Indicate failure
+    }
     const newTools = [...tools, { ...tool, id: Date.now(), available_quantity: tool.total_quantity }];
     setTools(newTools);
     saveData({ tools: newTools, customers, sites, rentals });
+    return true; // Indicate success
   }
   const editTool = (updatedTool: Tool) => {
     const newTools = tools.map(tool => tool.id === updatedTool.id ? updatedTool : tool);
@@ -261,7 +266,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const issueDate = new Date(rentalToUpdate.issue_date);
     const returnDate = new Date();
     // Ensure rental period is at least 1 day
-    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate) + 1);
+    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate));
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * daysRented;
   
     if (quantityToReturn >= rentalToUpdate.quantity) {

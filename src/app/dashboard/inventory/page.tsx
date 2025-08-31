@@ -5,24 +5,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Tool } from "@/context/AppContext";
 
 
 export default function InventoryPage() {
-  const { tools, addTool, editTool, deleteTool, rentals } = useContext(AppContext);
+  const { tools, addTool, editTool, deleteTool } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [toolData, setToolData] = useState({ name: '', total_quantity: 1, rate: 0 });
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+
+  const filteredTools = useMemo(() => {
+    if (!searchTerm) {
+      return tools;
+    }
+    return tools.filter(tool => 
+      tool.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [tools, searchTerm]);
+
 
   useEffect(() => {
     if (selectedTool) {
@@ -37,10 +48,14 @@ export default function InventoryPage() {
   }, [selectedTool]);
 
   const handleAddTool = () => {
-    addTool({ ...toolData, id: Date.now(), available_quantity: toolData.total_quantity });
-    toast({ title: "Success!", description: "New tool has been added." });
-    setIsAddDialogOpen(false);
-    setToolData({ name: '', total_quantity: 1, rate: 0 });
+    const success = addTool({ ...toolData, id: Date.now(), available_quantity: toolData.total_quantity });
+    if(success) {
+        toast({ title: "Success!", description: "New tool has been added." });
+        setIsAddDialogOpen(false);
+        setToolData({ name: '', total_quantity: 1, rate: 0 });
+    } else {
+        toast({ title: "Error", description: `A tool with the name "${toolData.name}" already exists.`, variant: "destructive"});
+    }
   };
 
   const handleEditTool = () => {
@@ -91,6 +106,16 @@ export default function InventoryPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Tool
             </Button>
           </div>
+          <div className="relative pt-4">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
+            <Input
+              type="search"
+              placeholder="Search for tools..."
+              className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -105,7 +130,7 @@ export default function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tools.map((tool) => (
+              {filteredTools.map((tool) => (
                 <TableRow key={tool.id}>
                   <TableCell className="font-medium">{tool.name}</TableCell>
                   <TableCell className="text-center">{tool.total_quantity}</TableCell>
@@ -133,6 +158,13 @@ export default function InventoryPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {tools.length > 0 && filteredTools.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                        No tools found matching "{searchTerm}".
+                    </TableCell>
+                </TableRow>
+              )}
               {tools.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={6} className="text-center h-24">
@@ -194,5 +226,3 @@ export default function InventoryPage() {
     </>
   );
 }
-
-    
