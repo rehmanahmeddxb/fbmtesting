@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useContext, useMemo, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { AppContext, Rental } from "@/context/AppContext";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, parseISO } from "date-fns";
@@ -222,6 +222,8 @@ export default function RentalsPage() {
             setSelectedToolId={setSelectedToolId}
             selectedStatus={selectedStatus}
             setSelectedStatus={setSelectedStatus}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
             onReset={handleResetFilters}
             statusOptions={[
                 { value: 'Rented', label: 'Rented' },
