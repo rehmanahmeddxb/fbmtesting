@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 // Types
@@ -49,6 +49,7 @@ type RentalOrderInput = {
     customer_id: number;
     site_id: number;
     issue_date: string;
+    invoice_number: string;
 }
 
 type ResetOptions = {
@@ -187,10 +188,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools, customers: newCustomers, sites, rentals });
   };
   const deleteCustomer = (id: number) => {
-    let updatedTools = [...tools];
     const customerActiveRentals = rentals.filter(r => r.customer_id === id && r.status === 'Rented');
-
-    // Return all items from active rentals to inventory before deleting the customer
+    
+    // Create a mutable copy of tools to update quantities
+    let updatedTools = [...tools];
+  
     customerActiveRentals.forEach(rental => {
         const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
         if (toolIndex !== -1) {
@@ -229,11 +231,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Rental Operations
    const addRental = (items: RentalItemInput[], orderDetails: RentalOrderInput) => {
-    const invoice_number = `INV-${Date.now()}`;
     const newRentalsToAdd: Rental[] = items.map(item => ({
         ...orderDetails,
         id: Date.now() + item.tool_id, // simple unique id
-        invoice_number: invoice_number,
         tool_id: item.tool_id,
         quantity: item.quantity,
         rate: item.rate,
@@ -263,10 +263,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   
     let updatedRentals = [...rentals];
     
-    const issueDate = new Date(rentalToUpdate.issue_date);
+    const issueDate = parseISO(rentalToUpdate.issue_date);
     const returnDate = new Date();
-    // Ensure rental period is at least 1 day
-    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate));
+    // Ensure rental period is at least 1 day.
+    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate) + 1);
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * daysRented;
   
     if (quantityToReturn >= rentalToUpdate.quantity) {
@@ -277,7 +277,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               ...r,
               status: 'Returned',
               return_date: format(returnDate, "yyyy-MM-dd"),
-              total_fee: (r.total_fee || 0) + feeForReturnedItems,
+              total_fee: feeForReturnedItems,
+              quantity: quantityToReturn, // ensure quantity reflects what's returned
             }
           : r
       );
@@ -293,7 +294,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const returnedRental: Rental = {
         ...rentalToUpdate,
         id: Date.now(), // New unique ID for the returned portion
-        invoice_number: rentalToUpdate.invoice_number, // Keep same invoice for tracking
         quantity: quantityToReturn,
         status: 'Returned',
         return_date: format(returnDate, "yyyy-MM-dd"),
@@ -315,10 +315,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Reset Data
   const resetData = (options: ResetOptions) => {
-    let updatedTools = [...tools];
-    let updatedCustomers = [...customers];
-    let updatedSites = [...sites];
-    let updatedRentals = [...rentals];
+    let updatedTools: Tool[] = JSON.parse(JSON.stringify(tools));
+    let updatedCustomers: Customer[] = JSON.parse(JSON.stringify(customers));
+    let updatedSites: Site[] = JSON.parse(JSON.stringify(sites));
+    let updatedRentals: Rental[] = JSON.parse(JSON.stringify(rentals));
 
     if (options.rentals) {
         const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
@@ -335,7 +335,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         updatedRentals = []; // Can't have rentals without tools
     }
     if (options.customers) {
-        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
+         const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
          rentedItems.forEach(rental => {
              const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
              if (toolIndex !== -1) {
@@ -347,6 +347,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     if(options.sites) {
         updatedSites = [];
+        // Also clear rentals as sites are mandatory for them
+        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
+        rentedItems.forEach(rental => {
+            const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
+            if (toolIndex !==-1) {
+                updatedTools[toolIndex].available_quantity += rental.quantity;
+            }
+        });
+        updatedRentals = [];
     }
     
     setTools(updatedTools);

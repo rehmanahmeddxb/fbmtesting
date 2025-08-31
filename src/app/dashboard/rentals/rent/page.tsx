@@ -18,7 +18,7 @@ import { AppContext, Tool } from "@/context/AppContext";
 type RentalItem = {
     id: number;
     toolId: string;
-    quantity: string; // Use string to allow for empty input
+    quantity: string;
     tool: Tool | undefined;
 };
 
@@ -29,8 +29,9 @@ export default function RentToolPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+  const [manualBookRef, setManualBookRef] = useState<string>("");
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([
-    { id: Date.now(), toolId: "", quantity: "1", tool: undefined }
+    { id: Date.now(), toolId: "", quantity: "", tool: undefined }
   ]);
 
   const handleItemChange = (id: number, field: 'toolId' | 'quantity', value: string) => {
@@ -38,11 +39,20 @@ export default function RentToolPage() {
         if (item.id === id) {
             if (field === 'toolId') {
                 const selectedTool = tools.find(t => t.id === parseInt(value));
-                return { ...item, toolId: value, tool: selectedTool, quantity: "1" }; // Reset quantity when tool changes
+                return { ...item, toolId: value, tool: selectedTool, quantity: "1" };
             }
             if (field === 'quantity') {
-                 // Allow empty input for user-friendliness, validation happens on submit
-                 return { ...item, quantity: value };
+                 if (value === "" || (parseInt(value) > 0 && parseInt(value) <= (item.tool?.available_quantity || 0))) {
+                     return { ...item, quantity: value };
+                 }
+                 // If value is invalid, we can choose to ignore it or cap it.
+                 // For now, let's just return the item as is to avoid invalid state.
+                 toast({
+                    title: "Invalid Quantity",
+                    description: `You can rent up to ${item.tool?.available_quantity} items.`,
+                    variant: "destructive"
+                 })
+                 return item;
             }
         }
         return item;
@@ -50,7 +60,7 @@ export default function RentToolPage() {
   };
   
   const addRentalItem = () => {
-    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: "1", tool: undefined }]);
+    setRentalItems(items => [...items, { id: Date.now(), toolId: "", quantity: "", tool: undefined }]);
   }
 
   const removeRentalItem = (id: number) => {
@@ -60,16 +70,15 @@ export default function RentToolPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId)) {
+    if (!selectedCustomerId || !selectedSiteId || !manualBookRef || rentalItems.some(item => !item.toolId)) {
         toast({
             title: "Error",
-            description: "Please select a customer, a site, and a tool for each item.",
+            description: "Please fill all fields: customer, site, manual book ref, and select a tool for each item.",
             variant: "destructive"
         });
         return;
     }
     
-    // Final check for quantities before submitting
     for (const item of rentalItems) {
         const quantity = parseInt(item.quantity);
         if (isNaN(quantity) || quantity <= 0) {
@@ -101,6 +110,7 @@ export default function RentToolPage() {
             customer_id: parseInt(selectedCustomerId),
             site_id: parseInt(selectedSiteId),
             issue_date: format(date || new Date(), "yyyy-MM-dd"),
+            invoice_number: manualBookRef,
         }
     );
 
@@ -178,7 +188,15 @@ export default function RentToolPage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="manual-book-ref">Manual Book Ref.</Label>
-                    <Input id="manual-book-ref" type="text" placeholder="HD-101" className="font-code" />
+                    <Input 
+                        id="manual-book-ref" 
+                        type="text" 
+                        placeholder="HD-101" 
+                        className="font-code"
+                        value={manualBookRef}
+                        onChange={(e) => setManualBookRef(e.target.value)} 
+                        required
+                    />
                 </div>
             </div>
 
@@ -213,11 +231,22 @@ export default function RentToolPage() {
                                 type="number" 
                                 placeholder="1" 
                                 required 
-                                min="1" 
+                                min="1"
                                 max={item.tool?.available_quantity} 
                                 value={item.quantity} 
                                 disabled={!item.tool}
-                                onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)} />
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Backspace' && item.quantity.length === 1) {
+                                      e.preventDefault();
+                                      handleItemChange(item.id, 'quantity', '');
+                                    }
+                                  }}
+                                onChange={(e) => {
+                                    if (e.target.value === '' || (parseInt(e.target.value) > 0)) {
+                                        handleItemChange(item.id, 'quantity', e.target.value)
+                                    }
+                                }}
+                            />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor={`rate-${item.id}`}>Daily Rate ($)</Label>
