@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -5,14 +6,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search, FileDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Tool } from "@/context/AppContext";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
+type ExportColumn = {
+  id: keyof Tool | 'status';
+  label: string;
+}
+
+const exportColumns: ExportColumn[] = [
+    { id: 'name', label: 'Name' },
+    { id: 'total_quantity', label: 'Total Qty' },
+    { id: 'available_quantity', label: 'Available' },
+    { id: 'rate', label: 'Daily Rate' },
+    { id: 'status', label: 'Status' },
+];
 
 
 export default function InventoryPage() {
@@ -20,9 +37,11 @@ export default function InventoryPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [toolData, setToolData] = useState({ name: '', total_quantity: 1, rate: 0 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedExportColumns, setSelectedExportColumns] = useState<Set<keyof Tool | 'status'>>(new Set(exportColumns.map(c => c.id)));
   const { toast } = useToast();
 
   const filteredTools = useMemo(() => {
@@ -92,6 +111,51 @@ export default function InventoryPage() {
     setIsDeleteDialogOpen(false);
     setSelectedTool(null);
   };
+  
+  const handleExportColumnToggle = (columnId: keyof Tool | 'status', checked: boolean) => {
+    const newSelected = new Set(selectedExportColumns);
+    if (checked) {
+      newSelected.add(columnId);
+    } else {
+      newSelected.delete(columnId);
+    }
+    setSelectedExportColumns(newSelected);
+  };
+
+  const handleGeneratePdf = () => {
+    const doc = new jsPDF();
+    const tableHeaders = exportColumns
+        .filter(col => selectedExportColumns.has(col.id))
+        .map(col => col.label);
+    
+    const tableData = filteredTools.map(tool => {
+        return exportColumns
+            .filter(col => selectedExportColumns.has(col.id))
+            .map(col => {
+                if (col.id === 'status') {
+                    return tool.available_quantity > 0 ? "Available" : "Out of Stock";
+                }
+                if (col.id === 'rate') {
+                    return `$${tool.rate.toFixed(2)}`;
+                }
+                return tool[col.id as keyof Tool];
+            });
+    });
+
+    (doc as any).autoTable({
+        head: [tableHeaders],
+        body: tableData,
+        startY: 20,
+        didDrawPage: (data: any) => {
+            doc.setFontSize(16);
+            doc.text("Inventory Report", 14, 15);
+        }
+    });
+
+    doc.save("inventory_report.pdf");
+    setIsExportDialogOpen(false);
+    toast({ title: "Success!", description: "Your PDF report has been generated." });
+  };
 
   return (
     <>
@@ -102,9 +166,14 @@ export default function InventoryPage() {
               <CardTitle>Inventory</CardTitle>
               <CardDescription>Manage your tool inventory. View, add, or edit tools.</CardDescription>
             </div>
-            <Button onClick={() => { setSelectedTool(null); setIsAddDialogOpen(true); }}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Tool
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export
+                </Button>
+                <Button onClick={() => { setSelectedTool(null); setIsAddDialogOpen(true); }}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Tool
+                </Button>
+            </div>
           </div>
           <div className="relative pt-4">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
@@ -223,6 +292,41 @@ export default function InventoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Export Inventory to PDF</DialogTitle>
+            <DialogDescription>
+              Select the columns you want to include in the PDF report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {exportColumns.map(column => (
+                <div key={column.id} className="flex items-center space-x-2">
+                    <Checkbox
+                        id={`export-${column.id}`}
+                        checked={selectedExportColumns.has(column.id)}
+                        onCheckedChange={(checked) => handleExportColumnToggle(column.id, !!checked)}
+                    />
+                    <label
+                        htmlFor={`export-${column.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        {column.label}
+                    </label>
+                </div>
+            ))}
+          </div>
+          <DialogFooter>
+             <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleGeneratePdf}>
+              Generate PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
