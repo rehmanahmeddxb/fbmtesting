@@ -4,22 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useState, useContext, useMemo } from "react";
 import { DateRange } from "react-day-picker";
-import { addDays, isWithinInterval, parseISO, differenceInCalendarDays } from "date-fns";
+import { addDays, isWithinInterval, parseISO, differenceInCalendarDays, format } from "date-fns";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { AppContext, Rental } from "@/context/AppContext";
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 export default function FinancialsPage() {
-    const { rentals } = useContext(AppContext);
+    const { rentals, tools, customers } = useContext(AppContext);
     const [date, setDate] = useState<DateRange | undefined>({
         from: addDays(new Date(), -30),
         to: new Date(),
     })
 
+    const getToolName = (id: number) => tools.find((t) => t.id === id)?.name || 'Unknown';
+    const getCustomerName = (id: number) => customers.find((c) => c.id === id)?.name || 'Unknown';
+
     const calculateFee = (rental: Rental) => {
         const issueDate = new Date(rental.issue_date);
-        // If the item is returned, use the return date. Otherwise, use today for pending fees.
         const endDate = rental.return_date ? new Date(rental.return_date) : new Date();
-        // Rental period should be at least 1 day.
         const daysRented = Math.max(1, differenceInCalendarDays(endDate, issueDate) + 1);
         return rental.rate * rental.quantity * daysRented;
     }
@@ -27,7 +32,6 @@ export default function FinancialsPage() {
     const filteredRentals = useMemo(() => {
         if (!date?.from) return [];
         const interval = { start: date.from, end: date.to || date.from };
-        // We filter based on issue date to see what was rented out in the period.
         return rentals.filter(rental => {
             const issueDate = parseISO(rental.issue_date);
             return isWithinInterval(issueDate, interval);
@@ -36,10 +40,9 @@ export default function FinancialsPage() {
 
     const totalRentalValue = useMemo(() => {
         return filteredRentals.reduce((sum, rental) => {
-            // For returned items, use the final calculated fee. For rented items, calculate the fee up to today.
             return sum + (rental.total_fee || calculateFee(rental));
         }, 0);
-    }, [filteredRentals]);
+    }, [filteredRentals, calculateFee]);
     
     const totalReceived = useMemo(() => {
          return filteredRentals
@@ -51,7 +54,7 @@ export default function FinancialsPage() {
         return filteredRentals
             .filter(r => r.status === 'Rented')
             .reduce((sum, rental) => sum + calculateFee(rental), 0);
-    }, [filteredRentals]);
+    }, [filteredRentals, calculateFee]);
 
     const monthlyData = useMemo(() => {
         const data = Array.from({ length: 12 }, (_, i) => ({
@@ -59,7 +62,6 @@ export default function FinancialsPage() {
           total: 0,
         }));
     
-        // Only count completed (returned) rentals for historical revenue.
         rentals.forEach(rental => {
           if (rental.status === 'Returned' && rental.total_fee) {
             const month = parseISO(rental.issue_date).getMonth();
@@ -70,6 +72,33 @@ export default function FinancialsPage() {
         return data;
       }, [rentals]);
 
+    const handleGeneratePdf = () => {
+        const doc = new jsPDF();
+        const tableHeaders = ["Invoice #", "Customer", "Tool", "Status", "Issue Date", "Return Date", "Fee"];
+        const tableData = filteredRentals.map(rental => [
+            rental.invoice_number,
+            getCustomerName(rental.customer_id),
+            getToolName(rental.tool_id),
+            rental.status,
+            rental.issue_date,
+            rental.return_date || 'N/A',
+            `$${(rental.total_fee ?? calculateFee(rental)).toFixed(2)}`
+        ]);
+
+        doc.setFontSize(16);
+        doc.text("Financial Report", 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Date Range: ${format(date?.from!, "PPP")} - ${format(date?.to!, "PPP")}`, 14, 22);
+
+        (doc as any).autoTable({
+            head: [tableHeaders],
+            body: tableData,
+            startY: 30,
+        });
+
+        doc.save(`financial_report_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    };
+
     return (
         <div className="space-y-6">
             <Card>
@@ -79,7 +108,12 @@ export default function FinancialsPage() {
                             <CardTitle>Financial Summary</CardTitle>
                             <CardDescription>Track rental income and payments within a date range.</CardDescription>
                         </div>
-                        <DateRangePicker date={date} setDate={setDate} />
+                        <div className="flex items-center gap-2">
+                            <DateRangePicker date={date} setDate={setDate} />
+                             <Button variant="outline" onClick={handleGeneratePdf} disabled={!date?.from}>
+                                <FileDown className="mr-2 h-4 w-4" /> Export
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>

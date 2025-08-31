@@ -5,6 +5,10 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { PieChart, Pie, Cell } from "recharts";
 import { useContext } from "react";
 import { AppContext } from "@/context/AppContext";
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const chartConfig = {
     value: {
@@ -32,12 +36,47 @@ export default function SummaryPage() {
         { name: 'Available', value: availableTools, fill: 'hsl(var(--primary))' },
     ];
 
+    const handleGeneratePdf = () => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("Inventory Summary Report", 14, 22);
+
+        doc.setFontSize(12);
+        doc.text(`Total Tools: ${totalTools}`, 14, 40);
+        doc.text(`Rented Tools: ${rentedTools}`, 14, 48);
+        doc.text(`Available Tools: ${availableTools}`, 14, 56);
+
+        const tableHeaders = ["Tool Name", "Total Quantity", "Available Quantity", "Rented Quantity"];
+        const tableData = tools.map(tool => [
+            tool.name,
+            tool.total_quantity,
+            tool.available_quantity,
+            tool.total_quantity - tool.available_quantity
+        ]);
+
+        (doc as any).autoTable({
+            head: [tableHeaders],
+            body: tableData,
+            startY: 70,
+        });
+
+        doc.save("inventory_summary.pdf");
+    };
+
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Inventory Summary</CardTitle>
-                    <CardDescription>A quick overview of your entire tool inventory status.</CardDescription>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>Inventory Summary</CardTitle>
+                            <CardDescription>A quick overview of your entire tool inventory status.</CardDescription>
+                        </div>
+                        <Button variant="outline" onClick={handleGeneratePdf}>
+                            <FileDown className="mr-2 h-4 w-4" /> Export
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-6 md:grid-cols-3">

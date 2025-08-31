@@ -4,21 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search, FileDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Site } from "@/context/AppContext";
 import Link from "next/link";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 export default function SitesPage() {
   const { sites, addSite, editSite, deleteSite } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [siteName, setSiteName] = useState('');
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +62,26 @@ export default function SitesPage() {
     setSelectedSite(null);
   };
 
+  const handleGeneratePdf = () => {
+    const doc = new jsPDF();
+    const tableHeaders = ['Site Name'];
+    const tableData = filteredSites.map(site => [site.name]);
+
+    (doc as any).autoTable({
+        head: [tableHeaders],
+        body: tableData,
+        startY: 20,
+        didDrawPage: (data: any) => {
+            doc.setFontSize(16);
+            doc.text("Sites Report", 14, 15);
+        }
+    });
+
+    doc.save("sites_report.pdf");
+    setIsExportDialogOpen(false);
+    toast({ title: "Success!", description: "Your PDF report has been generated." });
+  };
+
   return (
     <>
       <Card>
@@ -67,9 +91,14 @@ export default function SitesPage() {
               <CardTitle>Sites</CardTitle>
               <CardDescription>Manage rental sites. View, add, or remove site locations.</CardDescription>
             </div>
-            <Button onClick={() => { setSelectedSite(null); setSiteName(''); setIsAddDialogOpen(true); }}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Site
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export
+                </Button>
+                <Button onClick={() => { setSelectedSite(null); setSiteName(''); setIsAddDialogOpen(true); }}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Site
+                </Button>
+            </div>
           </div>
           <div className="relative pt-4">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
@@ -169,6 +198,24 @@ export default function SitesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Export Sites to PDF</DialogTitle>
+            <DialogDescription>
+              A PDF of all currently filtered sites will be generated.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+             <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleGeneratePdf}>
+              Generate PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -34,6 +34,7 @@ import {
   } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useContext, useMemo, useState } from "react";
@@ -42,6 +43,25 @@ import { DateRange } from "react-day-picker";
 import { isWithinInterval, parseISO } from "date-fns";
 import FilterBar from "@/components/filter-bar";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
+type ExportColumn = {
+  id: keyof Rental | 'customer' | 'site' | 'tool';
+  label: string;
+};
+
+const exportColumns: ExportColumn[] = [
+  { id: 'invoice_number', label: 'Invoice #' },
+  { id: 'customer', label: 'Customer' },
+  { id: 'site', label: 'Site' },
+  { id: 'tool', label: 'Tool' },
+  { id: 'quantity', label: 'Quantity' },
+  { id: 'issue_date', label: 'Issue Date' },
+  { id: 'return_date', label: 'Return Date' },
+  { id: 'status', label: 'Status' },
+  { id: 'total_fee', label: 'Fee' },
+];
 
 export default function RentalsPage() {
   const { rentals, tools, customers, sites, returnTool, confirmReturn, undoReturn } = useContext(AppContext);
@@ -56,8 +76,11 @@ export default function RentalsPage() {
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [returnQuantity, setReturnQuantity] = useState(1);
+  const [selectedExportColumns, setSelectedExportColumns] = useState<Set<ExportColumn['id']>>(new Set(exportColumns.map(c => c.id)));
+
 
   const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
   const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
@@ -189,6 +212,52 @@ export default function RentalsPage() {
     }
   }
 
+  const handleExportColumnToggle = (columnId: ExportColumn['id'], checked: boolean) => {
+    const newSelected = new Set(selectedExportColumns);
+    if (checked) {
+      newSelected.add(columnId);
+    } else {
+      newSelected.delete(columnId);
+    }
+    setSelectedExportColumns(newSelected);
+  };
+
+  const handleGeneratePdf = () => {
+    const doc = new jsPDF();
+    const tableHeaders = exportColumns
+      .filter(col => selectedExportColumns.has(col.id))
+      .map(col => col.label);
+  
+    const tableData = filteredRentals.map(rental => {
+      return exportColumns
+        .filter(col => selectedExportColumns.has(col.id))
+        .map(col => {
+          switch(col.id) {
+            case 'customer': return getCustomerName(rental.customer_id);
+            case 'site': return getSiteName(rental.site_id);
+            case 'tool': return getToolName(rental.tool_id);
+            case 'return_date': return rental.return_date || 'N/A';
+            case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
+            default: return rental[col.id as keyof Rental];
+          }
+        });
+    });
+  
+    (doc as any).autoTable({
+      head: [tableHeaders],
+      body: tableData,
+      startY: 20,
+      didDrawPage: (data: any) => {
+        doc.setFontSize(16);
+        doc.text("Rentals Report", 14, 15);
+      }
+    });
+  
+    doc.save("rentals_report.pdf");
+    setIsExportDialogOpen(false);
+    toast({ title: "Success!", description: "Your PDF report has been generated." });
+  };
+
 
   return (
     <>
@@ -200,7 +269,7 @@ export default function RentalsPage() {
             <CardDescription>Track all tool rentals, both active and returned.</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
               <FileDown className="mr-2 h-4 w-4" /> Export
             </Button>
             <Button asChild>
@@ -385,6 +454,41 @@ export default function RentalsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+
+    {/* Export Dialog */}
+    <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Export Rentals to PDF</DialogTitle>
+          <DialogDescription>
+            Select the columns you want to include in the PDF report.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4 max-h-60 overflow-y-auto">
+          {exportColumns.map(column => (
+              <div key={column.id} className="flex items-center space-x-2">
+                  <Checkbox
+                      id={`export-${column.id}`}
+                      checked={selectedExportColumns.has(column.id)}
+                      onCheckedChange={(checked) => handleExportColumnToggle(column.id, !!checked)}
+                  />
+                  <label
+                      htmlFor={`export-${column.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                      {column.label}
+                  </label>
+              </div>
+          ))}
+        </div>
+        <DialogFooter>
+           <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
+          <Button type="submit" onClick={handleGeneratePdf}>
+            Generate PDF
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

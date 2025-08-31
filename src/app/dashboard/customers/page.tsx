@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search, FileDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,19 +25,35 @@ import {
   } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Customer } from "@/context/AppContext";
 import Link from "next/link";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
+type ExportColumn = {
+  id: keyof Customer;
+  label: string;
+}
+
+const exportColumns: ExportColumn[] = [
+    { id: 'name', label: 'Name' },
+    { id: 'phone', label: 'Phone' },
+    { id: 'address', label: 'Address' },
+];
 
 export default function CustomersPage() {
   const { customers, addCustomer, editCustomer, deleteCustomer } = useContext(AppContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '' });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedExportColumns, setSelectedExportColumns] = useState<Set<keyof Customer>>(new Set(exportColumns.map(c => c.id)));
   const { toast } = useToast();
   
   const filteredCustomers = useMemo(() => {
@@ -88,6 +104,43 @@ export default function CustomersPage() {
     setSelectedCustomer(null);
   };
 
+  const handleExportColumnToggle = (columnId: keyof Customer, checked: boolean) => {
+    const newSelected = new Set(selectedExportColumns);
+    if (checked) {
+      newSelected.add(columnId);
+    } else {
+      newSelected.delete(columnId);
+    }
+    setSelectedExportColumns(newSelected);
+  };
+
+  const handleGeneratePdf = () => {
+    const doc = new jsPDF();
+    const tableHeaders = exportColumns
+        .filter(col => selectedExportColumns.has(col.id))
+        .map(col => col.label);
+    
+    const tableData = filteredCustomers.map(customer => {
+        return exportColumns
+            .filter(col => selectedExportColumns.has(col.id))
+            .map(col => customer[col.id]);
+    });
+
+    (doc as any).autoTable({
+        head: [tableHeaders],
+        body: tableData,
+        startY: 20,
+        didDrawPage: (data: any) => {
+            doc.setFontSize(16);
+            doc.text("Customer Report", 14, 15);
+        }
+    });
+
+    doc.save("customer_report.pdf");
+    setIsExportDialogOpen(false);
+    toast({ title: "Success!", description: "Your PDF report has been generated." });
+  };
+
   return (
     <>
       <Card>
@@ -97,9 +150,14 @@ export default function CustomersPage() {
               <CardTitle>Customers</CardTitle>
               <CardDescription>Manage customer profiles. View, add, or edit customer details.</CardDescription>
             </div>
-            <Button onClick={() => { setSelectedCustomer(null); setIsAddDialogOpen(true); }}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
-            </Button>
+             <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export
+                </Button>
+                <Button onClick={() => { setSelectedCustomer(null); setIsAddDialogOpen(true); }}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
+                </Button>
+            </div>
           </div>
            <div className="relative pt-4">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
@@ -211,6 +269,41 @@ export default function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Export Customers to PDF</DialogTitle>
+            <DialogDescription>
+              Select the columns you want to include in the PDF report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {exportColumns.map(column => (
+                <div key={column.id} className="flex items-center space-x-2">
+                    <Checkbox
+                        id={`export-${column.id}`}
+                        checked={selectedExportColumns.has(column.id)}
+                        onCheckedChange={(checked) => handleExportColumnToggle(column.id, !!checked)}
+                    />
+                    <label
+                        htmlFor={`export-${column.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        {column.label}
+                    </label>
+                </div>
+            ))}
+          </div>
+          <DialogFooter>
+             <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleGeneratePdf}>
+              Generate PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
