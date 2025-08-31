@@ -40,7 +40,7 @@ import { useRouter } from "next/navigation";
 import React, { useContext, useMemo, useState } from "react";
 import { AppContext, Rental } from "@/context/AppContext";
 import { DateRange } from "react-day-picker";
-import { isWithinInterval, parseISO } from "date-fns";
+import { isWithinInterval, parseISO, format } from "date-fns";
 import FilterBar from "@/components/filter-bar";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
@@ -120,12 +120,13 @@ export default function RentalsPage() {
         return {
             ...firstRental,
             isEditable,
+            items: group.map(r => getToolName(r.tool_id)).join(', '),
             itemCount: group.length,
             totalQuantity: group.reduce((sum, item) => sum + item.quantity, 0),
             overallStatus
         };
     }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
-  }, [filteredRentals]);
+  }, [filteredRentals, getToolName]);
 
 
   const handleResetFilters = () => {
@@ -234,7 +235,8 @@ export default function RentalsPage() {
             case 'customer': return getCustomerName(rental.customer_id);
             case 'site': return getSiteName(rental.site_id);
             case 'tool': return getToolName(rental.tool_id);
-            case 'return_date': return rental.return_date || 'N/A';
+            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A';
+            case 'issue_date': return format(parseISO(rental.issue_date), "dd-MM-yyyy");
             case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
             default: return rental[col.id as keyof Rental];
           }
@@ -319,8 +321,8 @@ export default function RentalsPage() {
                 <TableCell className="font-code">{rentalGroup.invoice_number}</TableCell>
                 <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
-                <TableCell>{rentalGroup.issue_date}</TableCell>
-                <TableCell>{rentalGroup.itemCount}</TableCell>
+                <TableCell>{format(parseISO(rentalGroup.issue_date), "dd-MM-yyyy")}</TableCell>
+                <TableCell className="max-w-[250px] truncate">{rentalGroup.items}</TableCell>
                 <TableCell>{rentalGroup.totalQuantity}</TableCell>
                 <TableCell>
                   {getStatusBadge(rentalGroup.overallStatus)}

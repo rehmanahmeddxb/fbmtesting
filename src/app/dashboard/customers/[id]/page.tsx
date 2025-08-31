@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { format, parseISO } from 'date-fns';
 
 export default function CustomerDetailPage() {
   const { customers, rentals, tools, sites } = useContext(AppContext);
@@ -71,7 +72,7 @@ export default function CustomerDetailPage() {
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{rental.issue_date}</TableCell>
+                  <TableCell>{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
                    <TableCell>{getSiteName(rental.site_id)}</TableCell>
                 </TableRow>
               ))}
@@ -109,8 +110,8 @@ export default function CustomerDetailPage() {
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{rental.issue_date}</TableCell>
-                  <TableCell>{rental.return_date}</TableCell>
+                  <TableCell>{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
+                  <TableCell>{rental.return_date ? format(parseISO(rental.return_date), 'dd-MM-yyyy') : 'N/A'}</TableCell>
                   <TableCell>${rental.total_fee?.toFixed(2)}</TableCell>
                 </TableRow>
               ))}

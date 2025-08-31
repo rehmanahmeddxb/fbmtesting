@@ -1,21 +1,57 @@
 
 'use client';
 
-import { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppContext } from '@/context/AppContext';
+import { AppContext, Rental } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, CheckCircle, Undo2, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function RentalDetailPage() {
-  const { customers, rentals, tools, sites } = useContext(AppContext);
+  const { customers, rentals, tools, sites, returnTool, confirmReturn, undoReturn } = useContext(AppContext);
   const params = useParams();
   const router = useRouter();
   const invoiceNumber = params.invoice as string;
+  const { toast } = useToast();
+
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
+  const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
+  const [returnQuantity, setReturnQuantity] = useState(1);
 
   const invoiceRentals = rentals.filter((r) => r.invoice_number === invoiceNumber);
   const firstRental = invoiceRentals[0];
@@ -49,8 +85,70 @@ export default function RentalDetailPage() {
     }
   }
 
+  const openReturnDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setReturnQuantity(rental.quantity); // Default to full quantity
+    setIsReturnDialogOpen(true);
+  }
+  
+  const openConfirmDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setIsConfirmDialogOpen(true);
+  }
+
+  const openUndoDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setIsUndoDialogOpen(true);
+  }
+
+  const handleReturnTool = () => {
+    if (selectedRental && returnQuantity > 0) {
+      if (returnQuantity > selectedRental.quantity) {
+          toast({
+              title: "Error",
+              description: "Return quantity cannot be greater than the rented quantity.",
+              variant: "destructive"
+          });
+          return;
+      }
+      returnTool(selectedRental.id, returnQuantity);
+      toast({
+          title: "Pending Return",
+          description: "Tool return is now pending confirmation."
+      });
+      setIsReturnDialogOpen(false);
+      setSelectedRental(null);
+    }
+  }
+
+  const handleConfirmReturn = () => {
+    if (selectedRental) {
+        confirmReturn(selectedRental.id);
+        toast({
+            title: "Success",
+            description: "Tool return has been confirmed."
+        });
+        setIsConfirmDialogOpen(false);
+        setSelectedRental(null);
+    }
+  }
+
+  const handleUndoReturn = () => {
+    if (selectedRental) {
+        undoReturn(selectedRental.id);
+        toast({
+            title: "Return Undone",
+            description: "The tool has been reverted to 'Rented' status.",
+            variant: "destructive"
+        });
+        setIsUndoDialogOpen(false);
+        setSelectedRental(null);
+    }
+  }
+
 
   return (
+    <>
     <div className="space-y-6">
        <Button variant="outline" onClick={() => router.back()}>
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Rentals
@@ -62,7 +160,7 @@ export default function RentalDetailPage() {
             <div>
               <CardTitle>Invoice {invoiceNumber}</CardTitle>
               <CardDescription>
-                Details for this rental invoice issued on {format(parseISO(firstRental.issue_date), "PPP")}.
+                Details for this rental invoice issued on {format(parseISO(firstRental.issue_date), "dd-MM-yyyy")}.
               </CardDescription>
             </div>
              <Button variant="outline" onClick={() => window.print()}>
@@ -103,6 +201,7 @@ export default function RentalDetailPage() {
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-center">Return Date</TableHead>
                 <TableHead className="text-right">Total Fee</TableHead>
+                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -115,8 +214,30 @@ export default function RentalDetailPage() {
                    <TableCell className="text-center">
                         {getStatusBadge(rental.status)}
                    </TableCell>
-                  <TableCell className="text-center">{rental.return_date ? format(parseISO(rental.return_date), "PPP") : 'N/A'}</TableCell>
+                  <TableCell className="text-center">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
                   <TableCell className="text-right">${rental.total_fee?.toFixed(2) || '0.00'}</TableCell>
+                  <TableCell className="text-right">
+                    {rental.status === 'Rented' && (
+                        <Button variant="outline" size="sm" onClick={() => openReturnDialog(rental)}>Return</Button>
+                    )}
+                    {rental.status === 'Returned Pending' && (
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => openConfirmDialog(rental)} className="text-green-600 focus:text-green-700">
+                                    <CheckCircle className="mr-2 h-4 w-4" /> Confirm Return
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openUndoDialog(rental)} className="text-red-600 focus:text-red-700">
+                                    <Undo2 className="mr-2 h-4 w-4" /> Undo Return
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                         </DropdownMenu>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -129,7 +250,73 @@ export default function RentalDetailPage() {
             </div>
         </CardFooter>
       </Card>
-
     </div>
+
+    {/* Return Tool Dialog */}
+    <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Return Tool</DialogTitle>
+            <DialogDescription>
+              Enter the quantity of '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' to return. This will mark the return as pending.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="return-quantity" className="text-right">
+                Quantity
+              </Label>
+              <Input
+                id="return-quantity"
+                type="number"
+                value={returnQuantity}
+                onChange={(e) => setReturnQuantity(parseInt(e.target.value))}
+                min="1"
+                max={selectedRental?.quantity}
+                className="col-span-3"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleReturnTool}>Submit Return</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    {/* Confirm Return Dialog */}
+    <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Return?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will finalize the return of {selectedRental?.quantity}x '{selectedRental ? getToolName(selectedRental.tool_id) : ''}'. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedRental(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmReturn}>Confirm</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Undo Return Dialog */}
+    <AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Undo Return?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will revert the return of {selectedRental?.quantity}x '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' and move it back to 'Rented' status.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedRental(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUndoReturn} className="bg-destructive hover:bg-destructive/90">Undo Return</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    </>
   );
 }

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { useContext } from "react";
 import { AppContext } from "@/context/AppContext";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function DashboardPage() {
     const { rentals, tools, customers } = useContext(AppContext);
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                                         <div className="font-medium">{getCustomerName(rental.customer_id)}</div>
                                     </TableCell>
                                     <TableCell>{getToolName(rental.tool_id)}</TableCell>
-                                    <TableCell>{format(new Date(rental.issue_date), "PPP")}</TableCell>
+                                    <TableCell>{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
                                     <TableCell>
                                         {getStatusBadge(rental.status)}
                                     </TableCell>

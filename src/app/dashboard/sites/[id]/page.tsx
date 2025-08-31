@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { format, parseISO } from 'date-fns';
 
 export default function SiteDetailPage() {
   const { sites, rentals, tools, customers } = useContext(AppContext);
@@ -58,7 +59,7 @@ export default function SiteDetailPage() {
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                   <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{rental.issue_date}</TableCell>
+                  <TableCell>{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
                 </TableRow>
               ))}
                {siteRentals.length === 0 && (
