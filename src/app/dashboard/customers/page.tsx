@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import {
   } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Customer } from "@/context/AppContext";
 import Link from "next/link";
@@ -37,7 +37,19 @@ export default function CustomersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '' });
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm) {
+      return customers;
+    }
+    return customers.filter(customer => 
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [customers, searchTerm]);
 
   useEffect(() => {
     if (selectedCustomer) {
@@ -89,6 +101,16 @@ export default function CustomersPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
             </Button>
           </div>
+           <div className="relative pt-4">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
+            <Input
+              type="search"
+              placeholder="Search for customers..."
+              className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -101,7 +123,7 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
@@ -124,7 +146,14 @@ export default function CustomersPage() {
                   </TableCell>
                 </TableRow>
               ))}
-               {customers.length === 0 && (
+               {customers.length > 0 && filteredCustomers.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24">
+                        No customers found matching "{searchTerm}".
+                    </TableCell>
+                </TableRow>
+              )}
+              {customers.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center h-24">
                         No customers found.

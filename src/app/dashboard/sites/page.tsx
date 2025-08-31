@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useContext } from "react";
+import { useState, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Site } from "@/context/AppContext";
 import Link from "next/link";
@@ -21,7 +21,17 @@ export default function SitesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [siteName, setSiteName] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+
+  const filteredSites = useMemo(() => {
+    if (!searchTerm) {
+      return sites;
+    }
+    return sites.filter(site => 
+      site.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [sites, searchTerm]);
 
   const handleAddSite = () => {
     addSite({ id: Date.now(), name: siteName });
@@ -61,6 +71,16 @@ export default function SitesPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Site
             </Button>
           </div>
+          <div className="relative pt-4">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground mt-2" />
+            <Input
+              type="search"
+              placeholder="Search for sites..."
+              className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -71,7 +91,7 @@ export default function SitesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sites.map((site) => (
+              {filteredSites.map((site) => (
                 <TableRow key={site.id}>
                   <TableCell className="font-medium">{site.name}</TableCell>
                   <TableCell className="text-right">
@@ -92,6 +112,13 @@ export default function SitesPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {sites.length > 0 && filteredSites.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={2} className="text-center h-24">
+                        No sites found matching "{searchTerm}".
+                    </TableCell>
+                </TableRow>
+              )}
                {sites.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={2} className="text-center h-24">
