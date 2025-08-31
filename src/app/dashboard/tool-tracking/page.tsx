@@ -20,7 +20,7 @@ export default function ToolTrackingPage() {
     const { rentals, tools, customers, sites } = useContext(AppContext);
     
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-    const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null); // Kept for filter bar consistency
+    const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
     const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -33,10 +33,11 @@ export default function ToolTrackingPage() {
             const issueDate = parseISO(rental.issue_date);
             const isDateInRange = !dateRange?.from || isWithinInterval(issueDate, { start: dateRange.from, end: dateRange.to || dateRange.from });
             const isCustomerMatch = !selectedCustomerId || rental.customer_id === parseInt(selectedCustomerId);
+            const isSiteMatch = !selectedSiteId || rental.site_id === parseInt(selectedSiteId);
             const isToolMatch = !selectedToolId || rental.tool_id === parseInt(selectedToolId);
             const isStatusMatch = !selectedStatus || rental.status === selectedStatus;
 
-            return isDateInRange && isCustomerMatch && isToolMatch && isStatusMatch;
+            return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch && isStatusMatch;
         });
 
         const aggregation = filtered.reduce<Record<string, AggregatedRental>>((acc, rental) => {
@@ -55,7 +56,7 @@ export default function ToolTrackingPage() {
 
         return Object.values(aggregation);
 
-    }, [rentals, dateRange, selectedCustomerId, selectedToolId, selectedStatus]);
+    }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId, selectedStatus]);
 
     const handleResetFilters = () => {
         setSelectedCustomerId(null);
