@@ -191,8 +191,22 @@
     "quantity": 100,
     "rate": 0,
     "comment": "SCRATCHES",
-    "status": "Rented",
-    "return_date": null,
-    "total_fee": null
+    "status": "Returned",
+    "return_date": "2025-08-31",
+    "total_fee": 0
+  },
+  {
+    "customer_id": 1755248587829,
+    "site_id": 1755248608677,
+    "issue_date": "2025-08-31",
+    "invoice_number": "HD1",
+    "id": 3511875190674,
+    "tool_id": 1755248567494,
+    "quantity": 14,
+    "rate": 0,
+    "comment": "",
+    "status": "Returned Pending",
+    "return_date": "2025-08-31",
+    "total_fee": 0
   }
 ]

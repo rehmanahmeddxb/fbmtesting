@@ -249,7 +249,7 @@ export default function RentalsPage() {
           <TableBody>
             {groupedRentals.map((rentalGroup) => (
               <TableRow key={rentalGroup.invoice_number}>
-                <TableCell className="font-mono">{rentalGroup.invoice_number}</TableCell>
+                <TableCell className="font-code">{rentalGroup.invoice_number}</TableCell>
                 <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
                 <TableCell>{rentalGroup.issue_date}</TableCell>

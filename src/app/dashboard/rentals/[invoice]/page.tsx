@@ -7,7 +7,7 @@ import { AppContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 
@@ -52,7 +52,10 @@ export default function RentalDetailPage() {
                 Details for this rental invoice issued on {format(parseISO(firstRental.issue_date), "PPP")}.
               </CardDescription>
             </div>
-             <Button variant="outline">Print Invoice</Button>
+             <Button variant="outline" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Invoice
+             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

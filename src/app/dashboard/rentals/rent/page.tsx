@@ -212,7 +212,7 @@ export default function RentToolPage() {
             <div className="space-y-4">
                  <Label className="text-lg font-medium">Tools</Label>
                 {rentalItems.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_2fr_auto] items-start gap-4 p-4 border rounded-md">
+                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_2fr_auto] items-end gap-4 p-4 border rounded-md">
                         <div className="space-y-2">
                             <Label htmlFor={`tool-${item.id}`}>Tool</Label>
                             <Select 
@@ -259,7 +259,7 @@ export default function RentToolPage() {
                              className="h-[38px]"
                            />
                         </div>
-                        <div className="flex items-end h-full">
+                        <div className="flex items-center h-full">
                           {rentalItems.length > 1 && (
                               <Button variant="ghost" size="icon" onClick={() => removeRentalItem(item.id)} className="text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4"/>
