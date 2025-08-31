@@ -124,6 +124,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const updateStateAndSave = (newState: Partial<{ tools: Tool[], customers: Customer[], sites: Site[], rentals: Rental[] }>) => {
+    const currentState = { tools, customers, sites, rentals };
+    const updatedState = { ...currentState, ...newState };
+    
+    if (newState.tools) setTools(newState.tools);
+    if (newState.customers) setCustomers(newState.customers);
+    if (newState.sites) setSites(newState.sites);
+    if (newState.rentals) setRentals(newState.rentals);
+
+    saveData(updatedState);
+  };
+
 
   // Load data on initial render
   useEffect(() => {
@@ -164,89 +176,104 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Tool CRUD
   const addTool = (tool: Tool): boolean => {
-    const toolExists = tools.some(t => t.name.toLowerCase() === tool.name.toLowerCase());
-    if (toolExists) {
-        return false; // Indicate failure
+    if (tools.some(t => t.name.toLowerCase() === tool.name.toLowerCase())) {
+        return false;
     }
-    const newTools = [...tools, { ...tool, id: Date.now(), available_quantity: tool.total_quantity }];
-    setTools(newTools);
-    saveData({ tools: newTools, customers, sites, rentals });
-    return true; // Indicate success
+    const newTool = { ...tool, id: Date.now(), available_quantity: tool.total_quantity };
+    updateStateAndSave({ tools: [...tools, newTool] });
+    return true;
   }
+
   const editTool = (updatedTool: Tool) => {
     const newTools = tools.map(tool => tool.id === updatedTool.id ? updatedTool : tool);
-    setTools(newTools);
-    saveData({ tools: newTools, customers, sites, rentals });
+    updateStateAndSave({ tools: newTools });
   };
+
   const deleteTool = (id: number): boolean => {
-     const hasActiveRentals = rentals.some(rental => rental.tool_id === id && rental.status === 'Rented');
-     if (hasActiveRentals) {
-         return false; // Indicate failure
+     if (rentals.some(rental => rental.tool_id === id && rental.status !== 'Returned')) {
+         return false;
      }
      const newTools = tools.filter(tool => tool.id !== id);
-     setTools(newTools);
-     saveData({ tools: newTools, customers, sites, rentals });
-     return true; // Indicate success
+     updateStateAndSave({ tools: newTools });
+     return true;
   }
 
   // Customer CRUD
   const addCustomer = (customer: Customer) => {
-    const newCustomers = [...customers, { ...customer, id: Date.now() }];
-    setCustomers(newCustomers);
-    saveData({ tools, customers: newCustomers, sites, rentals });
+    const newCustomer = { ...customer, id: Date.now() };
+    updateStateAndSave({ customers: [...customers, newCustomer] });
   }
+
   const editCustomer = (updatedCustomer: Customer) => {
     const newCustomers = customers.map(customer => customer.id === updatedCustomer.id ? updatedCustomer : customer);
-    setCustomers(newCustomers);
-    saveData({ tools, customers: newCustomers, sites, rentals });
+    updateStateAndSave({ customers: newCustomers });
   };
+
   const deleteCustomer = (id: number) => {
-    const customerActiveRentals = rentals.filter(r => r.customer_id === id && r.status === 'Rented');
+    const customerActiveRentals = rentals.filter(r => r.customer_id === id && r.status !== 'Returned');
     
-    // Create a mutable copy of tools to update quantities
-    let updatedTools = [...tools];
-  
+    let tempTools = [...tools];
     customerActiveRentals.forEach(rental => {
-        const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
+        const toolIndex = tempTools.findIndex(t => t.id === rental.tool_id);
         if (toolIndex !== -1) {
-            updatedTools[toolIndex].available_quantity += rental.quantity;
+            tempTools[toolIndex] = {
+                ...tempTools[toolIndex],
+                available_quantity: tempTools[toolIndex].available_quantity + rental.quantity
+            };
         }
     });
 
-    // Remove the customer and all their associated rental records
     const newCustomers = customers.filter(customer => customer.id !== id);
     const newRentals = rentals.filter(rental => rental.customer_id !== id);
     
-    setCustomers(newCustomers);
-    setRentals(newRentals);
-    setTools(updatedTools);
-
-    saveData({ tools: updatedTools, customers: newCustomers, sites, rentals: newRentals });
+    updateStateAndSave({
+        tools: tempTools,
+        customers: newCustomers,
+        rentals: newRentals
+    });
   }
 
   // Site CRUD
   const addSite = (site: Site) => {
-    const newSites = [...sites, { ...site, id: Date.now() }];
-    setSites(newSites);
-    saveData({ tools, customers, sites: newSites, rentals });
+    const newSite = { ...site, id: Date.now() };
+    updateStateAndSave({ sites: [...sites, newSite] });
   };
+
   const editSite = (updatedSite: Site) => {
     const newSites = sites.map(site => site.id === updatedSite.id ? updatedSite : site);
-    setSites(newSites);
-    saveData({ tools, customers, sites: newSites, rentals });
+    updateStateAndSave({ sites: newSites });
   };
+
   const deleteSite = (id: number) => {
-    // Note: Deleting a site does not affect inventory, just removes the location option.
+    if (rentals.some(r => r.site_id === id && r.status !== 'Returned')) {
+      toast({
+        title: "Error",
+        description: "Cannot delete a site with active rentals.",
+        variant: "destructive"
+      });
+      return;
+    }
     const newSites = sites.filter(site => site.id !== id);
-    setSites(newSites);
-    saveData({ tools, customers, sites: newSites, rentals });
+    updateStateAndSave({ sites: newSites });
   }
 
   // Rental Operations
    const addRental = (items: RentalItemInput[], orderDetails: RentalOrderInput) => {
+    const tempTools = [...tools];
+    
+    items.forEach(item => {
+        const toolIndex = tempTools.findIndex(t => t.id === item.tool_id);
+        if (toolIndex !== -1) {
+            tempTools[toolIndex] = {
+                ...tempTools[toolIndex],
+                available_quantity: tempTools[toolIndex].available_quantity - item.quantity
+            };
+        }
+    });
+
     const newRentalsToAdd: Rental[] = items.map(item => ({
         ...orderDetails,
-        id: Date.now() + item.tool_id, // simple unique id
+        id: Date.now() + item.tool_id + Math.random(),
         tool_id: item.tool_id,
         quantity: item.quantity,
         rate: item.rate,
@@ -256,27 +283,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         total_fee: null,
     }));
     
-    const newRentals = [...rentals, ...newRentalsToAdd];
-    setRentals(newRentals);
-
-    // Decrease available quantity for each tool
-    const newTools = tools.map(tool => {
-        const rentedItem = items.find(item => item.tool_id === tool.id);
-        if (rentedItem) {
-            return { ...tool, available_quantity: tool.available_quantity - rentedItem.quantity }
-        }
-        return tool;
+    updateStateAndSave({
+        tools: tempTools,
+        rentals: [...rentals, ...newRentalsToAdd]
     });
-    setTools(newTools);
-    saveData({ tools: newTools, customers, sites, rentals: newRentals });
   };
 
   const editRental = (originalInvoiceNumber: string, items: RentalItemInput[], orderDetails: RentalOrderInput) => {
-    const originalRentals = rentals.filter(r => r.invoice_number === originalInvoiceNumber && r.status === 'Rented');
     let tempTools = [...tools];
     
-    // 1. Revert inventory from original rentals
-    originalRentals.forEach(rental => {
+    // 1. Revert inventory from original rentals that are being edited/removed
+    const originalInvoiceRentals = rentals.filter(r => r.invoice_number === originalInvoiceNumber && r.status === 'Rented');
+    originalInvoiceRentals.forEach(rental => {
         const toolIndex = tempTools.findIndex(t => t.id === rental.tool_id);
         if (toolIndex !== -1) {
             tempTools[toolIndex].available_quantity += rental.quantity;
@@ -284,12 +302,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // 2. Remove original 'Rented' rentals for this invoice
-    const rentalsWithoutOriginal = rentals.filter(r => r.invoice_number !== originalInvoiceNumber || r.status !== 'Rented');
-
+    const rentalsWithoutOriginals = rentals.filter(r => r.invoice_number !== originalInvoiceNumber || r.status !== 'Rented');
+    
     // 3. Create new rental items
     const newRentalItems: Rental[] = items.map(item => ({
         ...orderDetails,
-        id: Date.now() + item.tool_id, // new unique id
+        id: Date.now() + item.tool_id + Math.random(),
         tool_id: item.tool_id,
         quantity: item.quantity,
         rate: item.rate,
@@ -299,19 +317,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         total_fee: null,
     }));
 
-    // 4. Update inventory for new rentals
+    // 4. Update inventory for new/edited rentals
     newRentalItems.forEach(item => {
         const toolIndex = tempTools.findIndex(t => t.id === item.tool_id);
         if (toolIndex !== -1) {
             tempTools[toolIndex].available_quantity -= item.quantity;
         }
     });
-
+    
     // 5. Combine and set state
-    const finalRentals = [...rentalsWithoutOriginal, ...newRentalItems];
-    setTools(tempTools);
-    setRentals(finalRentals);
-    saveData({ tools: tempTools, customers, sites, rentals: finalRentals });
+    const finalRentals = [...rentalsWithoutOriginals, ...newRentalItems];
+    updateStateAndSave({ tools: tempTools, rentals: finalRentals });
   };
 
 
@@ -319,16 +335,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const rentalToUpdate = rentals.find(r => r.id === rentalId);
     if (!rentalToUpdate) return;
   
-    let updatedRentals = [...rentals];
+    let tempRentals = [...rentals];
     
     const issueDate = parseISO(rentalToUpdate.issue_date);
     const returnDate = new Date();
-    const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate) + 1);
+    const daysRented = Math.max(0, differenceInCalendarDays(returnDate, issueDate)) + 1;
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * daysRented;
   
     if (quantityToReturn >= rentalToUpdate.quantity) {
-      // Full return of this specific rental record, mark as pending
-      updatedRentals = updatedRentals.map(r =>
+      tempRentals = tempRentals.map(r =>
         r.id === rentalId
           ? {
               ...r,
@@ -340,141 +355,102 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           : r
       );
     } else {
-      // Partial return: 1. Update the original rental's quantity
-      updatedRentals = updatedRentals.map(r =>
+      tempRentals = tempRentals.map(r =>
         r.id === rentalId
           ? { ...r, quantity: r.quantity - quantityToReturn }
           : r
       );
       
-      // 2. Create a new, separate "Returned Pending" record for the returned items
       const returnedRental: Rental = {
         ...rentalToUpdate,
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         quantity: quantityToReturn,
         status: 'Returned Pending',
         return_date: format(returnDate, "yyyy-MM-dd"),
         total_fee: feeForReturnedItems,
       };
-      updatedRentals.push(returnedRental);
+      tempRentals.push(returnedRental);
     }
-    setRentals(updatedRentals);
-
-    // Increase available quantity of the tool
-    const newTools = tools.map(tool =>
+   
+    const tempTools = tools.map(tool =>
         tool.id === rentalToUpdate.tool_id
           ? { ...tool, available_quantity: tool.available_quantity + quantityToReturn }
           : tool
     );
-    setTools(newTools);
-    saveData({ tools: newTools, customers, sites, rentals: updatedRentals });
+    updateStateAndSave({ tools: tempTools, rentals: tempRentals });
   };
 
   const confirmReturn = (rentalId: number) => {
     const updatedRentals = rentals.map(r =>
       r.id === rentalId ? { ...r, status: 'Returned' as RentalStatus } : r
     );
-    setRentals(updatedRentals);
-    saveData({ tools, customers, sites, rentals: updatedRentals });
+    updateStateAndSave({ rentals: updatedRentals });
   };
 
   const undoReturn = (rentalId: number) => {
     const rentalToUndo = rentals.find(r => r.id === rentalId);
     if (!rentalToUndo) return;
 
-    // This logic handles merging back if it was a partial return, or just deleting the pending record
     const originalRental = rentals.find(r => 
         r.tool_id === rentalToUndo.tool_id && 
         r.invoice_number === rentalToUndo.invoice_number &&
         r.status === 'Rented'
     );
     
-    let updatedRentals: Rental[];
+    let tempRentals: Rental[];
 
     if (originalRental) {
-        // It was a partial return, merge it back
-        updatedRentals = rentals.map(r => 
+        tempRentals = rentals.map(r => 
             r.id === originalRental.id 
             ? { ...r, quantity: r.quantity + rentalToUndo.quantity }
             : r
-        ).filter(r => r.id !== rentalToUndo.id); // remove the pending record
+        ).filter(r => r.id !== rentalToUndo.id);
     } else {
-        // It was a full return, just revert its status
-        updatedRentals = rentals.map(r => 
+        tempRentals = rentals.map(r => 
             r.id === rentalId 
             ? { ...r, status: 'Rented', return_date: null, total_fee: null } 
             : r
         );
     }
     
-    setRentals(updatedRentals);
-
-    // Decrease available quantity of the tool
-    const newTools = tools.map(tool =>
+    const tempTools = tools.map(tool =>
         tool.id === rentalToUndo.tool_id
           ? { ...tool, available_quantity: tool.available_quantity - rentalToUndo.quantity }
           : tool
     );
-    setTools(newTools);
-    saveData({ tools: newTools, customers, sites, rentals: updatedRentals });
+    
+    updateStateAndSave({ tools: tempTools, rentals: tempRentals });
   };
 
   // Reset Data
   const resetData = (options: ResetOptions) => {
-    let updatedTools: Tool[] = JSON.parse(JSON.stringify(tools));
-    let updatedCustomers: Customer[] = JSON.parse(JSON.stringify(customers));
-    let updatedSites: Site[] = JSON.parse(JSON.stringify(sites));
-    let updatedRentals: Rental[] = JSON.parse(JSON.stringify(rentals));
+    let finalState: { tools: Tool[], customers: Customer[], sites: Site[], rentals: Rental[] } = {
+        tools: [...tools],
+        customers: [...customers],
+        sites: [...sites],
+        rentals: [...rentals],
+    };
 
     if (options.rentals) {
-        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
-        rentedItems.forEach(rental => {
-            const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
-            if (toolIndex !== -1) {
-                 updatedTools[toolIndex].available_quantity += rental.quantity;
-            }
-        });
-        updatedRentals = [];
+        finalState.rentals = [];
+        finalState.tools = finalState.tools.map(t => ({ ...t, available_quantity: t.total_quantity }));
     }
     if (options.tools) {
-        updatedTools = [];
-        updatedRentals = []; // Can't have rentals without tools
+        finalState.tools = [];
+        finalState.rentals = [];
     }
     if (options.customers) {
-         const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
-         rentedItems.forEach(rental => {
-             const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
-             if (toolIndex !== -1) {
-                  updatedTools[toolIndex].available_quantity += rental.quantity;
-             }
-         });
-        updatedCustomers = [];
-        updatedRentals = []; // Can't have rentals without customers
+        finalState.customers = [];
+        finalState.rentals = [];
+        finalState.tools = finalState.tools.map(t => ({ ...t, available_quantity: t.total_quantity }));
     }
     if(options.sites) {
-        updatedSites = [];
-        // Also clear rentals as sites are mandatory for them
-        const rentedItems = updatedRentals.filter(r => r.status === 'Rented');
-        rentedItems.forEach(rental => {
-            const toolIndex = updatedTools.findIndex(t => t.id === rental.tool_id);
-            if (toolIndex !==-1) {
-                updatedTools[toolIndex].available_quantity += rental.quantity;
-            }
-        });
-        updatedRentals = [];
+        finalState.sites = [];
+        finalState.rentals = [];
+        finalState.tools = finalState.tools.map(t => ({ ...t, available_quantity: t.total_quantity }));
     }
     
-    setTools(updatedTools);
-    setCustomers(updatedCustomers);
-    setSites(updatedSites);
-    setRentals(updatedRentals);
-    
-    saveData({
-        tools: updatedTools,
-        customers: updatedCustomers,
-        sites: updatedSites,
-        rentals: updatedRentals
-    });
+    updateStateAndSave(finalState);
   }
 
 
