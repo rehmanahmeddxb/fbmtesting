@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useContext } from 'react';
@@ -49,8 +50,8 @@ export default function SiteDetailPage() {
               <TableRow>
                 <TableHead>Tool</TableHead>
                  <TableHead>Customer</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Issue Date</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Issue Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -58,8 +59,8 @@ export default function SiteDetailPage() {
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
-                  <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
+                  <TableCell className="text-right">{rental.quantity}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
                 </TableRow>
               ))}
                {siteRentals.length === 0 && (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useContext } from 'react';
@@ -62,18 +63,18 @@ export default function CustomerDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tool</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Issue Date</TableHead>
                 <TableHead>Site</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Issue Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {customerRentals.filter(r => r.status === 'Rented').map((rental) => (
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
-                  <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
-                   <TableCell>{getSiteName(rental.site_id)}</TableCell>
+                  <TableCell>{getSiteName(rental.site_id)}</TableCell>
+                  <TableCell className="text-right">{rental.quantity}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
                 </TableRow>
               ))}
                {customerRentals.filter(r => r.status === 'Rented').length === 0 && (
@@ -99,20 +100,20 @@ export default function CustomerDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tool</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Return Date</TableHead>
-                 <TableHead>Total Fee</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Issue Date</TableHead>
+                <TableHead className="text-right">Return Date</TableHead>
+                 <TableHead className="text-right">Total Fee</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {customerRentals.filter(r => r.status === 'Returned').map((rental) => (
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
-                  <TableCell>{rental.quantity}</TableCell>
-                  <TableCell>{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
-                  <TableCell>{rental.return_date ? format(parseISO(rental.return_date), 'dd-MM-yyyy') : 'N/A'}</TableCell>
-                  <TableCell>${rental.total_fee?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{rental.quantity}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), 'dd-MM-yyyy') : 'N/A'}</TableCell>
+                  <TableCell className="text-right">${rental.total_fee?.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
                {customerRentals.filter(r => r.status === 'Returned').length === 0 && (

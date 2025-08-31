@@ -199,7 +199,7 @@ export default function RentalDetailPage() {
                 <TableHead className="text-center">Quantity</TableHead>
                 <TableHead className="text-center">Daily Rate</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Return Date</TableHead>
+                <TableHead className="text-right">Return Date</TableHead>
                 <TableHead className="text-right">Total Fee</TableHead>
                  <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -214,7 +214,7 @@ export default function RentalDetailPage() {
                    <TableCell className="text-center">
                         {getStatusBadge(rental.status)}
                    </TableCell>
-                  <TableCell className="text-center">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
                   <TableCell className="text-right">${rental.total_fee?.toFixed(2) || '0.00'}</TableCell>
                   <TableCell className="text-right">
                     {rental.status === 'Rented' && (

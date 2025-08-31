@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -146,12 +147,12 @@ export default function ReportsPage() {
               <TableRow>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Tool</TableHead>
-                <TableHead>Qty</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Return Date</TableHead>
+                <TableHead className="text-center">Qty</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Issue Date</TableHead>
+                <TableHead className="text-right">Return Date</TableHead>
                 <TableHead className="text-right">Total Fee</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,15 +160,15 @@ export default function ReportsPage() {
                 <TableRow key={rental.id}>
                   <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
-                  <TableCell>{rental.quantity}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
-                  <TableCell>{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
-                  <TableCell>{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
+                  <TableCell className="text-center">{rental.quantity}</TableCell>
+                  <TableCell className="text-center">
+                    {getStatusBadge(rental.status)}
+                  </TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     {rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(rental.status)}
                   </TableCell>
                 </TableRow>
               ))}

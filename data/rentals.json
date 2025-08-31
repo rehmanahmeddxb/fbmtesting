@@ -34,12 +34,12 @@
     "invoice_number": "2",
     "id": 3513263264163.2383,
     "tool_id": 1756631563778,
-    "quantity": 50,
+    "quantity": 49,
     "rate": 0,
     "comment": "",
-    "status": "Returned Pending",
-    "return_date": "2025-08-31",
-    "total_fee": 0
+    "status": "Rented",
+    "return_date": null,
+    "total_fee": null
   },
   {
     "customer_id": 1756631588985,
@@ -54,5 +54,19 @@
     "status": "Rented",
     "return_date": null,
     "total_fee": null
+  },
+  {
+    "customer_id": 1756631588985,
+    "site_id": 1756631612281,
+    "issue_date": "2025-08-31",
+    "invoice_number": "2",
+    "id": 1756632268825.2217,
+    "tool_id": 1756631563778,
+    "quantity": 1,
+    "rate": 0,
+    "comment": "",
+    "status": "Returned",
+    "return_date": "2025-08-31",
+    "total_fee": 0
   }
 ]

@@ -308,11 +308,11 @@ export default function RentalsPage() {
               <TableHead>Invoice #</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Site</TableHead>
-              <TableHead>Issue Date</TableHead>
               <TableHead>Items</TableHead>
-              <TableHead>Total Qty</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead><span className="sr-only">Actions</span></TableHead>
+              <TableHead className="text-center">Total Qty</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-right">Issue Date</TableHead>
+              <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -321,12 +321,12 @@ export default function RentalsPage() {
                 <TableCell className="font-code">{rentalGroup.invoice_number}</TableCell>
                 <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
-                <TableCell>{format(parseISO(rentalGroup.issue_date), "dd-MM-yyyy")}</TableCell>
                 <TableCell className="max-w-[250px] truncate">{rentalGroup.items}</TableCell>
-                <TableCell>{rentalGroup.totalQuantity}</TableCell>
-                <TableCell>
+                <TableCell className="text-center">{rentalGroup.totalQuantity}</TableCell>
+                <TableCell className="text-center">
                   {getStatusBadge(rentalGroup.overallStatus)}
                 </TableCell>
+                <TableCell className="text-right">{format(parseISO(rentalGroup.issue_date), "dd-MM-yyyy")}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

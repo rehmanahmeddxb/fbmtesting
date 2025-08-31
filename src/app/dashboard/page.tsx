@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -106,8 +107,8 @@ export default function DashboardPage() {
                             <TableRow>
                                 <TableHead>Customer</TableHead>
                                 <TableHead>Tool</TableHead>
-                                <TableHead>Issue Date</TableHead>
-                                <TableHead>Status</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead className="text-right">Issue Date</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -117,10 +118,10 @@ export default function DashboardPage() {
                                         <div className="font-medium">{getCustomerName(rental.customer_id)}</div>
                                     </TableCell>
                                     <TableCell>{getToolName(rental.tool_id)}</TableCell>
-                                    <TableCell>{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         {getStatusBadge(rental.status)}
                                     </TableCell>
+                                    <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
                                 </TableRow>
                             ))}
                             {recentRentals.length === 0 && (
