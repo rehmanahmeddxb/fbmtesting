@@ -1,16 +1,18 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, FileDown } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileDown, Pencil } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -23,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useContext, useMemo, useState } from "react";
 import { AppContext, Rental } from "@/context/AppContext";
 import { DateRange } from "react-day-picker";
@@ -33,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function RentalsPage() {
   const { rentals, tools, customers, sites, returnTool } = useContext(AppContext);
   const { toast } = useToast();
+  const router = useRouter();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -57,9 +61,27 @@ export default function RentalsPage() {
       const isStatusMatch = !selectedStatus || rental.status === selectedStatus;
 
       return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch && isStatusMatch;
-    });
+    }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
   }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId, selectedStatus]);
   
+  const groupedRentals = useMemo(() => {
+    const groups = filteredRentals.reduce<Record<string, Rental[]>>((acc, rental) => {
+        (acc[rental.invoice_number] = acc[rental.invoice_number] || []).push(rental);
+        return acc;
+    }, {});
+    return Object.values(groups).map(group => {
+        const isEditable = group.some(r => r.status === 'Rented');
+        const firstRental = group[0];
+        return {
+            ...firstRental,
+            isEditable,
+            itemCount: group.length,
+            totalQuantity: group.reduce((sum, item) => sum + item.quantity, 0),
+        };
+    });
+  }, [filteredRentals]);
+
+
   const handleResetFilters = () => {
     setSelectedCustomerId(null);
     setSelectedSiteId(null);
@@ -137,29 +159,27 @@ export default function RentalsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Invoice #</TableHead>
-              <TableHead>Tool</TableHead>
-              <TableHead>Qty</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Issue Date</TableHead>
-              <TableHead>Return Date</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Total Qty</TableHead>
               <TableHead>Status</TableHead>
               <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRentals.map((rental) => (
-              <TableRow key={rental.id}>
-                <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
-                <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
-                <TableCell>{rental.quantity}</TableCell>
-                <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
-                <TableCell>{getSiteName(rental.site_id)}</TableCell>
-                <TableCell>{rental.issue_date}</TableCell>
-                <TableCell>{rental.return_date || 'N/A'}</TableCell>
+            {groupedRentals.map((rentalGroup) => (
+              <TableRow key={rentalGroup.invoice_number}>
+                <TableCell className="font-mono font-code">{rentalGroup.invoice_number}</TableCell>
+                <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
+                <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
+                <TableCell>{rentalGroup.issue_date}</TableCell>
+                <TableCell>{rentalGroup.itemCount}</TableCell>
+                <TableCell>{rentalGroup.totalQuantity}</TableCell>
                 <TableCell>
-                  <Badge variant={rental.status === 'Rented' ? 'default' : 'secondary'} className={rental.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>
-                    {rental.status}
+                   <Badge variant={rentalGroup.status === 'Rented' ? 'default' : 'secondary'} className={rentalGroup.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>
+                    {rentalGroup.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -172,10 +192,21 @@ export default function RentalsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {rental.status === 'Rented' && <DropdownMenuItem onClick={() => openReturnDialog(rental)}>Return Tool</DropdownMenuItem>}
                       <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/rentals/${rental.invoice_number}`}>View Details</Link>
+                        <Link href={`/dashboard/rentals/${rentalGroup.invoice_number}`}>View Details</Link>
                       </DropdownMenuItem>
+                       {rentalGroup.isEditable && (
+                        <DropdownMenuItem onSelect={() => router.push(`/dashboard/rentals/edit/${rentalGroup.invoice_number}`)}>
+                           <Pencil className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Individual Items</DropdownMenuLabel>
+                       {rentals.filter(r => r.invoice_number === rentalGroup.invoice_number && r.status === 'Rented').map(r => (
+                         <DropdownMenuItem key={r.id} onClick={() => openReturnDialog(r)}>
+                           Return '{getToolName(r.tool_id)}'
+                         </DropdownMenuItem>
+                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -235,3 +266,5 @@ export default function RentalsPage() {
     </>
   );
 }
+
+    

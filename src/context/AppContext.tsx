@@ -41,14 +41,14 @@ export type Rental = {
     comment?: string;
 };
 
-type RentalItemInput = {
+export type RentalItemInput = {
     tool_id: number;
     quantity: number;
     rate: number;
     comment?: string;
 }
 
-type RentalOrderInput = {
+export type RentalOrderInput = {
     customer_id: number;
     site_id: number;
     issue_date: string;
@@ -81,6 +81,7 @@ interface AppContextType {
   editSite: (site: Site) => void;
   deleteSite: (id: number) => void;
   addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
+  editRental: (originalInvoiceNumber: string, items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
   resetData: (options: ResetOptions) => void;
   isLoading: boolean;
@@ -102,6 +103,7 @@ export const AppContext = createContext<AppContextType>({
   editSite: () => {},
   deleteSite: () => {},
   addRental: () => {},
+  editRental: () => {},
   returnTool: () => {},
   resetData: () => {},
   isLoading: true,
@@ -263,6 +265,50 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveData({ tools: newTools, customers, sites, rentals: newRentals });
   };
 
+  const editRental = (originalInvoiceNumber: string, items: RentalItemInput[], orderDetails: RentalOrderInput) => {
+    const originalRentals = rentals.filter(r => r.invoice_number === originalInvoiceNumber && r.status === 'Rented');
+    let tempTools = [...tools];
+    
+    // 1. Revert inventory from original rentals
+    originalRentals.forEach(rental => {
+        const toolIndex = tempTools.findIndex(t => t.id === rental.tool_id);
+        if (toolIndex !== -1) {
+            tempTools[toolIndex].available_quantity += rental.quantity;
+        }
+    });
+
+    // 2. Remove original 'Rented' rentals for this invoice
+    const rentalsWithoutOriginal = rentals.filter(r => r.invoice_number !== originalInvoiceNumber || r.status !== 'Rented');
+
+    // 3. Create new rental items
+    const newRentalItems: Rental[] = items.map(item => ({
+        ...orderDetails,
+        id: Date.now() + item.tool_id, // new unique id
+        tool_id: item.tool_id,
+        quantity: item.quantity,
+        rate: item.rate,
+        comment: item.comment,
+        status: 'Rented',
+        return_date: null,
+        total_fee: null,
+    }));
+
+    // 4. Update inventory for new rentals
+    newRentalItems.forEach(item => {
+        const toolIndex = tempTools.findIndex(t => t.id === item.tool_id);
+        if (toolIndex !== -1) {
+            tempTools[toolIndex].available_quantity -= item.quantity;
+        }
+    });
+
+    // 5. Combine and set state
+    const finalRentals = [...rentalsWithoutOriginal, ...newRentalItems];
+    setTools(tempTools);
+    setRentals(finalRentals);
+    saveData({ tools: tempTools, customers, sites, rentals: finalRentals });
+  };
+
+
   const returnTool = (rentalId: number, quantityToReturn: number) => {
     const rentalToUpdate = rentals.find(r => r.id === rentalId);
     if (!rentalToUpdate) return;
@@ -394,6 +440,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       editSite,
       deleteSite,
       addRental,
+      editRental,
       returnTool,
       resetData,
       isLoading,
@@ -408,3 +455,5 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     </AppContext.Provider>
   );
 };
+
+    
