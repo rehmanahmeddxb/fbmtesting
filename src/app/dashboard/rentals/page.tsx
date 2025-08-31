@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, FileDown, Pencil } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileDown, Pencil, CheckCircle, Undo2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -34,7 +44,7 @@ import FilterBar from "@/components/filter-bar";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RentalsPage() {
-  const { rentals, tools, customers, sites, returnTool } = useContext(AppContext);
+  const { rentals, tools, customers, sites, returnTool, confirmReturn, undoReturn } = useContext(AppContext);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -44,6 +54,8 @@ export default function RentalsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [returnQuantity, setReturnQuantity] = useState(1);
 
@@ -61,7 +73,11 @@ export default function RentalsPage() {
       const isStatusMatch = !selectedStatus || rental.status === selectedStatus;
 
       return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch && isStatusMatch;
-    }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
+    }).sort((a, b) => {
+        const dateA = new Date(a.issue_date).getTime();
+        const dateB = new Date(b.issue_date).getTime();
+        return dateB - dateA;
+    });
   }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId, selectedStatus]);
   
   const groupedRentals = useMemo(() => {
@@ -72,13 +88,20 @@ export default function RentalsPage() {
     return Object.values(groups).map(group => {
         const isEditable = group.some(r => r.status === 'Rented');
         const firstRental = group[0];
+        const overallStatus = group.every(r => r.status === 'Returned') 
+                                ? 'Returned' 
+                                : group.some(r => r.status === 'Rented')
+                                ? 'Rented'
+                                : 'Pending';
+
         return {
             ...firstRental,
             isEditable,
             itemCount: group.length,
             totalQuantity: group.reduce((sum, item) => sum + item.quantity, 0),
+            overallStatus
         };
-    });
+    }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
   }, [filteredRentals]);
 
 
@@ -95,6 +118,16 @@ export default function RentalsPage() {
     setReturnQuantity(rental.quantity); // Default to full quantity
     setIsReturnDialogOpen(true);
   }
+  
+  const openConfirmDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setIsConfirmDialogOpen(true);
+  }
+
+  const openUndoDialog = (rental: Rental) => {
+    setSelectedRental(rental);
+    setIsUndoDialogOpen(true);
+  }
 
   const handleReturnTool = () => {
     if (selectedRental && returnQuantity > 0) {
@@ -108,11 +141,51 @@ export default function RentalsPage() {
       }
       returnTool(selectedRental.id, returnQuantity);
       toast({
-          title: "Success",
-          description: "Tool(s) have been returned successfully."
+          title: "Pending Return",
+          description: "Tool return is now pending confirmation."
       });
       setIsReturnDialogOpen(false);
       setSelectedRental(null);
+    }
+  }
+
+  const handleConfirmReturn = () => {
+    if (selectedRental) {
+        confirmReturn(selectedRental.id);
+        toast({
+            title: "Success",
+            description: "Tool return has been confirmed."
+        });
+        setIsConfirmDialogOpen(false);
+        setSelectedRental(null);
+    }
+  }
+
+  const handleUndoReturn = () => {
+    if (selectedRental) {
+        undoReturn(selectedRental.id);
+        toast({
+            title: "Return Undone",
+            description: "The tool has been reverted to 'Rented' status.",
+            variant: "destructive"
+        });
+        setIsUndoDialogOpen(false);
+        setSelectedRental(null);
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'Rented':
+            return <Badge variant="default" className="bg-accent text-accent-foreground">{status}</Badge>;
+        case 'Returned':
+            return <Badge variant="secondary">{status}</Badge>;
+        case 'Returned Pending':
+            return <Badge variant="destructive">{status}</Badge>;
+        case 'Pending':
+            return <Badge variant="outline">Mixed Status</Badge>;
+        default:
+            return <Badge>{status}</Badge>;
     }
   }
 
@@ -121,7 +194,7 @@ export default function RentalsPage() {
     <>
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start gap-4">
+        <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <CardTitle>Rental Tracker</CardTitle>
             <CardDescription>Track all tool rentals, both active and returned.</CardDescription>
@@ -147,11 +220,14 @@ export default function RentalsPage() {
             setSelectedSiteId={setSelectedSiteId}
             selectedToolId={selectedToolId}
             setSelectedToolId={setSelectedToolId}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
             selectedStatus={selectedStatus}
             setSelectedStatus={setSelectedStatus}
             onReset={handleResetFilters}
+            statusOptions={[
+                { value: 'Rented', label: 'Rented' },
+                { value: 'Returned Pending', label: 'Returned Pending' },
+                { value: 'Returned', label: 'Returned' },
+            ]}
         />
       </CardHeader>
       <CardContent>
@@ -171,16 +247,14 @@ export default function RentalsPage() {
           <TableBody>
             {groupedRentals.map((rentalGroup) => (
               <TableRow key={rentalGroup.invoice_number}>
-                <TableCell className="font-mono font-code">{rentalGroup.invoice_number}</TableCell>
+                <TableCell className="font-mono">{rentalGroup.invoice_number}</TableCell>
                 <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
                 <TableCell>{rentalGroup.issue_date}</TableCell>
                 <TableCell>{rentalGroup.itemCount}</TableCell>
                 <TableCell>{rentalGroup.totalQuantity}</TableCell>
                 <TableCell>
-                   <Badge variant={rentalGroup.status === 'Rented' ? 'default' : 'secondary'} className={rentalGroup.status === 'Rented' ? 'bg-accent text-accent-foreground' : ''}>
-                    {rentalGroup.status}
-                  </Badge>
+                  {getStatusBadge(rentalGroup.overallStatus)}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -202,10 +276,24 @@ export default function RentalsPage() {
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel>Individual Items</DropdownMenuLabel>
-                       {rentals.filter(r => r.invoice_number === rentalGroup.invoice_number && r.status === 'Rented').map(r => (
-                         <DropdownMenuItem key={r.id} onClick={() => openReturnDialog(r)}>
-                           Return '{getToolName(r.tool_id)}'
-                         </DropdownMenuItem>
+                       {rentals.filter(r => r.invoice_number === rentalGroup.invoice_number).map(r => (
+                        <React.Fragment key={r.id}>
+                           {r.status === 'Rented' && (
+                             <DropdownMenuItem onClick={() => openReturnDialog(r)}>
+                               Return '{getToolName(r.tool_id)}'
+                             </DropdownMenuItem>
+                           )}
+                           {r.status === 'Returned Pending' && (
+                            <>
+                                <DropdownMenuItem onClick={() => openConfirmDialog(r)} className="text-green-600 focus:text-green-700">
+                                    <CheckCircle className="mr-2 h-4 w-4" /> Confirm Return '{getToolName(r.tool_id)}'
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openUndoDialog(r)} className="text-red-600 focus:text-red-700">
+                                    <Undo2 className="mr-2 h-4 w-4" /> Undo Return '{getToolName(r.tool_id)}'
+                                </DropdownMenuItem>
+                            </>
+                           )}
+                        </React.Fragment>
                        ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -237,7 +325,7 @@ export default function RentalsPage() {
           <DialogHeader>
             <DialogTitle>Return Tool</DialogTitle>
             <DialogDescription>
-              Enter the quantity of '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' to return.
+              Enter the quantity of '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' to return. This will mark the return as pending.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -259,12 +347,42 @@ export default function RentalsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" onClick={handleReturnTool}>Return</Button>
+            <Button type="submit" onClick={handleReturnTool}>Submit Return</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+    {/* Confirm Return Dialog */}
+    <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Return?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will finalize the return of {selectedRental?.quantity}x '{selectedRental ? getToolName(selectedRental.tool_id) : ''}'. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedRental(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmReturn}>Confirm</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Undo Return Dialog */}
+    <AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Undo Return?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will revert the return of {selectedRental?.quantity}x '{selectedRental ? getToolName(selectedRental.tool_id) : ''}' and move it back to 'Rented' status.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedRental(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUndoReturn} className="bg-destructive hover:bg-destructive/90">Undo Return</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
-
-    

@@ -26,6 +26,8 @@ export type Site = {
   name:string;
 };
 
+export type RentalStatus = 'Rented' | 'Returned' | 'Returned Pending';
+
 export type Rental = {
     id: number;
     invoice_number: string;
@@ -34,7 +36,7 @@ export type Rental = {
     site_id: number;
     issue_date: string;
     return_date: string | null;
-    status: 'Rented' | 'Returned';
+    status: RentalStatus;
     quantity: number;
     rate: number;
     total_fee: number | null;
@@ -83,6 +85,8 @@ interface AppContextType {
   addRental: (items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   editRental: (originalInvoiceNumber: string, items: RentalItemInput[], orderDetails: RentalOrderInput) => void;
   returnTool: (rentalId: number, quantity: number) => void;
+  confirmReturn: (rentalId: number) => void;
+  undoReturn: (rentalId: number) => void;
   resetData: (options: ResetOptions) => void;
   isLoading: boolean;
 }
@@ -105,6 +109,8 @@ export const AppContext = createContext<AppContextType>({
   addRental: () => {},
   editRental: () => {},
   returnTool: () => {},
+  confirmReturn: () => {},
+  undoReturn: () => {},
   resetData: () => {},
   isLoading: true,
 });
@@ -317,20 +323,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const issueDate = parseISO(rentalToUpdate.issue_date);
     const returnDate = new Date();
-    // Ensure rental period is at least 1 day.
     const daysRented = Math.max(1, differenceInCalendarDays(returnDate, issueDate) + 1);
     const feeForReturnedItems = rentalToUpdate.rate * quantityToReturn * daysRented;
   
     if (quantityToReturn >= rentalToUpdate.quantity) {
-      // Full return of this specific rental record
+      // Full return of this specific rental record, mark as pending
       updatedRentals = updatedRentals.map(r =>
         r.id === rentalId
           ? {
               ...r,
-              status: 'Returned',
+              status: 'Returned Pending',
               return_date: format(returnDate, "yyyy-MM-dd"),
               total_fee: feeForReturnedItems,
-              quantity: quantityToReturn, // ensure quantity reflects what's returned
+              quantity: quantityToReturn,
             }
           : r
       );
@@ -342,12 +347,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           : r
       );
       
-      // 2. Create a new, separate "Returned" rental record for the returned items
+      // 2. Create a new, separate "Returned Pending" record for the returned items
       const returnedRental: Rental = {
         ...rentalToUpdate,
-        id: Date.now(), // New unique ID for the returned portion
+        id: Date.now(),
         quantity: quantityToReturn,
-        status: 'Returned',
+        status: 'Returned Pending',
         return_date: format(returnDate, "yyyy-MM-dd"),
         total_fee: feeForReturnedItems,
       };
@@ -359,6 +364,55 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTools = tools.map(tool =>
         tool.id === rentalToUpdate.tool_id
           ? { ...tool, available_quantity: tool.available_quantity + quantityToReturn }
+          : tool
+    );
+    setTools(newTools);
+    saveData({ tools: newTools, customers, sites, rentals: updatedRentals });
+  };
+
+  const confirmReturn = (rentalId: number) => {
+    const updatedRentals = rentals.map(r =>
+      r.id === rentalId ? { ...r, status: 'Returned' as RentalStatus } : r
+    );
+    setRentals(updatedRentals);
+    saveData({ tools, customers, sites, rentals: updatedRentals });
+  };
+
+  const undoReturn = (rentalId: number) => {
+    const rentalToUndo = rentals.find(r => r.id === rentalId);
+    if (!rentalToUndo) return;
+
+    // This logic handles merging back if it was a partial return, or just deleting the pending record
+    const originalRental = rentals.find(r => 
+        r.tool_id === rentalToUndo.tool_id && 
+        r.invoice_number === rentalToUndo.invoice_number &&
+        r.status === 'Rented'
+    );
+    
+    let updatedRentals: Rental[];
+
+    if (originalRental) {
+        // It was a partial return, merge it back
+        updatedRentals = rentals.map(r => 
+            r.id === originalRental.id 
+            ? { ...r, quantity: r.quantity + rentalToUndo.quantity }
+            : r
+        ).filter(r => r.id !== rentalToUndo.id); // remove the pending record
+    } else {
+        // It was a full return, just revert its status
+        updatedRentals = rentals.map(r => 
+            r.id === rentalId 
+            ? { ...r, status: 'Rented', return_date: null, total_fee: null } 
+            : r
+        );
+    }
+    
+    setRentals(updatedRentals);
+
+    // Decrease available quantity of the tool
+    const newTools = tools.map(tool =>
+        tool.id === rentalToUndo.tool_id
+          ? { ...tool, available_quantity: tool.available_quantity - rentalToUndo.quantity }
           : tool
     );
     setTools(newTools);
@@ -442,6 +496,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       addRental,
       editRental,
       returnTool,
+      confirmReturn,
+      undoReturn,
       resetData,
       isLoading,
     }}>
@@ -455,5 +511,3 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     </AppContext.Provider>
   );
 };
-
-    

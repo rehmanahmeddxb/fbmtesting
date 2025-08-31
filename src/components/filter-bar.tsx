@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,6 +11,11 @@ import { Customer, Site, Tool } from '@/context/AppContext';
 import { DateRange } from 'react-day-picker';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface FilterOption {
+    value: string;
+    label: string;
+}
 
 interface FilterBarProps {
   customers: Customer[];
@@ -26,6 +32,7 @@ interface FilterBarProps {
   dateRange: DateRange | undefined;
   setDateRange: (date: DateRange | undefined) => void;
   onReset: () => void;
+  statusOptions?: FilterOption[];
 }
 
 interface ComboboxProps {
@@ -104,6 +111,10 @@ export default function FilterBar({
   dateRange,
   setDateRange,
   onReset,
+  statusOptions = [
+    { value: 'Rented', label: 'Rented' },
+    { value: 'Returned', label: 'Returned' },
+  ],
 }: FilterBarProps) {
   const hasActiveFilters = selectedCustomerId || selectedSiteId || selectedToolId || dateRange || selectedStatus;
 
@@ -119,7 +130,7 @@ export default function FilterBar({
         onSelectValue={setSelectedCustomerId}
         placeholder="Filter by Customer"
         searchPlaceholder="Search customers..."
-        className="min-w-[180px] flex-1 sm:flex-initial"
+        className="min-w-[180px] flex-grow sm:flex-grow-0"
       />
 
       <ComboboxFilter
@@ -128,7 +139,7 @@ export default function FilterBar({
         onSelectValue={setSelectedSiteId}
         placeholder="Filter by Site"
         searchPlaceholder="Search sites..."
-        className="min-w-[180px] flex-1 sm:flex-initial"
+        className="min-w-[180px] flex-grow sm:flex-grow-0"
       />
       
       <ComboboxFilter
@@ -137,26 +148,27 @@ export default function FilterBar({
         onSelectValue={setSelectedToolId}
         placeholder="Filter by Tool"
         searchPlaceholder="Search tools..."
-        className="min-w-[180px] flex-1 sm:flex-initial"
+        className="min-w-[180px] flex-grow sm:flex-grow-0"
       />
 
       <Select value={selectedStatus || 'all'} onValueChange={(value) => setSelectedStatus(value === 'all' ? null : value)}>
-        <SelectTrigger className="w-full sm:w-auto min-w-[180px] flex-1 sm:flex-initial">
+        <SelectTrigger className="w-full sm:w-auto min-w-[180px] flex-grow sm:flex-grow-0">
           <SelectValue placeholder="Filter by Status" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="Rented">Rented</SelectItem>
-          <SelectItem value="Returned">Returned</SelectItem>
+          {statusOptions.map(option => (
+            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
-      <div className="flex-1 sm:flex-initial">
+      <div className="flex-grow sm:flex-grow-0">
          <DateRangePicker date={dateRange} setDate={setDateRange} />
       </div>
 
       {hasActiveFilters && (
-        <Button variant="ghost" onClick={onReset} className="flex-1 sm:flex-initial">
+        <Button variant="ghost" onClick={onReset} className="flex-grow sm:flex-grow-0">
           Reset Filters
         </Button>
       )}
