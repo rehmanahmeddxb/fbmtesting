@@ -4,13 +4,13 @@
     "total_quantity": 100,
     "rate": 0,
     "id": 1756631563778,
-    "available_quantity": 1
+    "available_quantity": 50
   },
   {
     "name": "shovel",
     "total_quantity": 100,
     "rate": 0,
     "id": 1756631569721,
-    "available_quantity": 0
+    "available_quantity": 50
   }
 ]
