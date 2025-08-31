@@ -34,9 +34,10 @@ interface ComboboxProps {
   onSelectValue: (value: string | null) => void;
   placeholder: string;
   searchPlaceholder: string;
+  className?: string;
 }
 
-function ComboboxFilter({ items, selectedValue, onSelectValue, placeholder, searchPlaceholder }: ComboboxProps) {
+function ComboboxFilter({ items, selectedValue, onSelectValue, placeholder, searchPlaceholder, className }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -46,13 +47,13 @@ function ComboboxFilter({ items, selectedValue, onSelectValue, placeholder, sear
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full sm:w-[180px] justify-between font-normal"
+          className={cn("w-full sm:w-auto justify-between font-normal", className)}
         >
           {selectedValue ? items.find((item) => item.value === selectedValue)?.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[180px] p-0">
+      <PopoverContent className="w-[200px] p-0">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -111,13 +112,14 @@ export default function FilterBar({
   const toolItems = tools.map(t => ({ value: String(t.id), label: t.name }));
 
   return (
-    <div className="flex flex-wrap items-center gap-4 pt-4 border-t mt-4">
+    <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
       <ComboboxFilter
         items={customerItems}
         selectedValue={selectedCustomerId}
         onSelectValue={setSelectedCustomerId}
         placeholder="Filter by Customer"
         searchPlaceholder="Search customers..."
+        className="min-w-[180px] flex-1 sm:flex-initial"
       />
 
       <ComboboxFilter
@@ -126,6 +128,7 @@ export default function FilterBar({
         onSelectValue={setSelectedSiteId}
         placeholder="Filter by Site"
         searchPlaceholder="Search sites..."
+        className="min-w-[180px] flex-1 sm:flex-initial"
       />
       
       <ComboboxFilter
@@ -134,10 +137,11 @@ export default function FilterBar({
         onSelectValue={setSelectedToolId}
         placeholder="Filter by Tool"
         searchPlaceholder="Search tools..."
+        className="min-w-[180px] flex-1 sm:flex-initial"
       />
 
       <Select value={selectedStatus || 'all'} onValueChange={(value) => setSelectedStatus(value === 'all' ? null : value)}>
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="w-full sm:w-auto min-w-[180px] flex-1 sm:flex-initial">
           <SelectValue placeholder="Filter by Status" />
         </SelectTrigger>
         <SelectContent>
@@ -147,10 +151,12 @@ export default function FilterBar({
         </SelectContent>
       </Select>
 
-      <DateRangePicker date={dateRange} setDate={setDateRange} />
+      <div className="flex-1 sm:flex-initial">
+         <DateRangePicker date={dateRange} setDate={setDateRange} />
+      </div>
 
       {hasActiveFilters && (
-        <Button variant="ghost" onClick={onReset}>
+        <Button variant="ghost" onClick={onReset} className="flex-1 sm:flex-initial">
           Reset Filters
         </Button>
       )}
