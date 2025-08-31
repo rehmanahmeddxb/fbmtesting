@@ -373,14 +373,14 @@ export default function RentalsPage() {
             ))}
             {rentals.length > 0 && filteredRentals.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={9} className="text-center h-24">
+                    <TableCell colSpan={8} className="text-center h-24">
                        No results found for the selected filters.
                     </TableCell>
                 </TableRow>
             )}
             {rentals.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={9} className="text-center h-24">
+                    <TableCell colSpan={8} className="text-center h-24">
                         No rentals found.
                     </TableCell>
                 </TableRow>
