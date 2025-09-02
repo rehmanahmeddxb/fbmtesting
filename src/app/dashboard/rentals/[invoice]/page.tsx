@@ -160,7 +160,7 @@ export default function RentalDetailPage() {
             <div>
               <CardTitle>Invoice {invoiceNumber}</CardTitle>
               <CardDescription>
-                Details for this rental invoice issued on {format(parseISO(firstRental.issue_date), "dd-MM-yyyy")}.
+                Details for this rental invoice issued on {format(parseISO(firstRental.issue_date), "dd-M-yyyy")}.
               </CardDescription>
             </div>
              <Button variant="outline" onClick={() => window.print()}>
@@ -214,7 +214,7 @@ export default function RentalDetailPage() {
                    <TableCell className="text-center">
                         {getStatusBadge(rental.status)}
                    </TableCell>
-                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'}</TableCell>
                   <TableCell className="text-right">${rental.total_fee?.toFixed(2) || '0.00'}</TableCell>
                   <TableCell className="text-right">
                     {rental.status === 'Rented' && (

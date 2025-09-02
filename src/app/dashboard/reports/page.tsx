@@ -75,8 +75,8 @@ export default function ReportsPage() {
                 switch(col.id) {
                     case 'tool': return getToolName(rental.tool_id);
                     case 'customer': return getCustomerName(rental.customer_id);
-                    case 'issue_date': return format(parseISO(rental.issue_date), "dd-MM-yyyy");
-                    case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A';
+                    case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
+                    case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
                     case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
                     default: return rental[col.id as keyof Rental];
                 }
@@ -104,8 +104,8 @@ export default function ReportsPage() {
          switch(col.id) {
             case 'tool': return getToolName(rental.tool_id);
             case 'customer': return getCustomerName(rental.customer_id);
-            case 'issue_date': return format(parseISO(rental.issue_date), "dd-MM-yyyy");
-            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A';
+            case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
+            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
             case 'total_fee': return rental.total_fee ? `${rental.total_fee.toFixed(2)}` : 'N/A';
             default: return rental[col.id as keyof Rental];
         }
@@ -165,8 +165,8 @@ export default function ReportsPage() {
                   <TableCell className="text-center">
                     {getStatusBadge(rental.status)}
                   </TableCell>
-                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
-                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A'}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-M-yyyy")}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     {rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A'}
                   </TableCell>

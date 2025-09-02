@@ -60,7 +60,7 @@ export default function SiteDetailPage() {
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                   <TableCell className="text-right">{rental.quantity}</TableCell>
-                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-M-yyyy")}</TableCell>
                 </TableRow>
               ))}
                {siteRentals.length === 0 && (

@@ -74,7 +74,7 @@ export default function CustomerDetailPage() {
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getSiteName(rental.site_id)}</TableCell>
                   <TableCell className="text-right">{rental.quantity}</TableCell>
-                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-M-yyyy')}</TableCell>
                 </TableRow>
               ))}
                {customerRentals.filter(r => r.status === 'Rented').length === 0 && (
@@ -111,8 +111,8 @@ export default function CustomerDetailPage() {
                 <TableRow key={rental.id}>
                   <TableCell>{getToolName(rental.tool_id)}</TableCell>
                   <TableCell className="text-right">{rental.quantity}</TableCell>
-                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-MM-yyyy')}</TableCell>
-                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), 'dd-MM-yyyy') : 'N/A'}</TableCell>
+                  <TableCell className="text-right">{format(parseISO(rental.issue_date), 'dd-M-yyyy')}</TableCell>
+                  <TableCell className="text-right">{rental.return_date ? format(parseISO(rental.return_date), 'dd-M-yyyy') : 'N/A'}</TableCell>
                   <TableCell className="text-right">${rental.total_fee?.toFixed(2)}</TableCell>
                 </TableRow>
               ))}

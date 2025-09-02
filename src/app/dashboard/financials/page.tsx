@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,15 +81,15 @@ export default function FinancialsPage() {
             getCustomerName(rental.customer_id),
             getToolName(rental.tool_id),
             rental.status,
-            format(parseISO(rental.issue_date), "dd-MM-yyyy"),
-            rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A',
+            format(parseISO(rental.issue_date), "dd-M-yyyy"),
+            rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A',
             `$${(rental.total_fee ?? calculateFee(rental)).toFixed(2)}`
         ]);
 
         doc.setFontSize(16);
         doc.text("Financial Report", 14, 15);
         doc.setFontSize(10);
-        doc.text(`Date Range: ${format(date?.from!, "dd-MM-yyyy")} - ${format(date?.to!, "dd-MM-yyyy")}`, 14, 22);
+        doc.text(`Date Range: ${format(date?.from!, "dd-M-yyyy")} - ${format(date?.to!, "dd-M-yyyy")}`, 14, 22);
 
         (doc as any).autoTable({
             head: [tableHeaders],

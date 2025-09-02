@@ -121,7 +121,7 @@ export default function DashboardPage() {
                                     <TableCell className="text-center">
                                         {getStatusBadge(rental.status)}
                                     </TableCell>
-                                    <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-MM-yyyy")}</TableCell>
+                                    <TableCell className="text-right">{format(parseISO(rental.issue_date), "dd-M-yyyy")}</TableCell>
                                 </TableRow>
                             ))}
                             {recentRentals.length === 0 && (

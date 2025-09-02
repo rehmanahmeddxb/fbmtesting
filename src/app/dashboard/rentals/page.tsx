@@ -235,8 +235,8 @@ export default function RentalsPage() {
             case 'customer': return getCustomerName(rental.customer_id);
             case 'site': return getSiteName(rental.site_id);
             case 'tool': return getToolName(rental.tool_id);
-            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-MM-yyyy") : 'N/A';
-            case 'issue_date': return format(parseISO(rental.issue_date), "dd-MM-yyyy");
+            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
+            case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
             case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
             default: return rental[col.id as keyof Rental];
           }
@@ -326,7 +326,7 @@ export default function RentalsPage() {
                 <TableCell className="text-center">
                   {getStatusBadge(rentalGroup.overallStatus)}
                 </TableCell>
-                <TableCell className="text-right">{format(parseISO(rentalGroup.issue_date), "dd-MM-yyyy")}</TableCell>
+                <TableCell className="text-right">{format(parseISO(rentalGroup.issue_date), "dd-M-yyyy")}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
