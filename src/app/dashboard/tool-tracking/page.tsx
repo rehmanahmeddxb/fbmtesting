@@ -329,7 +329,7 @@ export default function ToolTrackingPage() {
                         <div className="space-y-2">
                             <Label htmlFor="new-customer">Transfer to Customer</Label>
                             <Select 
-                                value={transferDetails?.newCustomerId} 
+                                value={transferDetails?.newCustomerId || ''} 
                                 onValueChange={(value) => setTransferDetails(d => d ? {...d, newCustomerId: value} : null)}
                             >
                                 <SelectTrigger id="new-customer">
@@ -345,7 +345,7 @@ export default function ToolTrackingPage() {
                          <div className="space-y-2">
                             <Label htmlFor="new-site">Transfer to Site</Label>
                              <Select
-                                value={transferDetails?.newSiteId} 
+                                value={transferDetails?.newSiteId || ''} 
                                 onValueChange={(value) => setTransferDetails(d => d ? {...d, newSiteId: value} : null)}
                             >
                                 <SelectTrigger id="new-site">
@@ -361,8 +361,8 @@ export default function ToolTrackingPage() {
                             <Input
                                 id="transfer-quantity"
                                 type="number"
-                                value={transferDetails?.quantityToTransfer}
-                                onChange={(e) => setTransferDetails(d => d ? {...d, quantityToTransfer: parseInt(e.target.value)} : null)}
+                                value={transferDetails?.quantityToTransfer ?? ''}
+                                onChange={(e) => setTransferDetails(d => d ? {...d, quantityToTransfer: parseInt(e.target.value) || 0} : null)}
                                 min="1"
                                 max={transferDetails?.quantityToTransfer}
                             />

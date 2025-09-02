@@ -1,33 +1,5 @@
 [
   {
-    "customer_id": 1756631584170,
-    "site_id": 1756631607809,
-    "issue_date": "2025-08-31",
-    "invoice_number": "1",
-    "id": 3513263218646.411,
-    "tool_id": 1756631563778,
-    "quantity": 50,
-    "rate": 0,
-    "comment": "",
-    "status": "Rented",
-    "return_date": null,
-    "total_fee": null
-  },
-  {
-    "customer_id": 1756631584170,
-    "site_id": 1756631607809,
-    "issue_date": "2025-08-31",
-    "invoice_number": "1",
-    "id": 3513263224589.9507,
-    "tool_id": 1756631569721,
-    "quantity": 50,
-    "rate": 0,
-    "comment": "",
-    "status": "Rented",
-    "return_date": null,
-    "total_fee": null
-  },
-  {
     "customer_id": 1756631588985,
     "site_id": 1756631612281,
     "issue_date": "2025-08-31",
@@ -82,5 +54,33 @@
     "status": "Returned",
     "return_date": "2025-08-31",
     "total_fee": 0
+  },
+  {
+    "id": 1756795643574.6482,
+    "invoice_number": "T-1-1756795643574",
+    "tool_id": 1756631569721,
+    "customer_id": 1756631593865,
+    "site_id": 1756631612281,
+    "issue_date": "2025-09-02",
+    "return_date": null,
+    "status": "Rented",
+    "quantity": 50,
+    "rate": 0,
+    "total_fee": null,
+    "comment": "Transferred from invoice 1"
+  },
+  {
+    "id": 1756795649230.2783,
+    "invoice_number": "T-1-1756795649230",
+    "tool_id": 1756631563778,
+    "customer_id": 1756631593865,
+    "site_id": 1756631612281,
+    "issue_date": "2025-09-02",
+    "return_date": null,
+    "status": "Rented",
+    "quantity": 50,
+    "rate": 0,
+    "total_fee": null,
+    "comment": "Transferred from invoice 1"
   }
 ]
