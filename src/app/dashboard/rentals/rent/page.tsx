@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Tool } from "@/context/AppContext";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type RentalItem = {
     id: number;
@@ -26,7 +27,7 @@ type RentalItem = {
 };
 
 export default function RentToolPage() {
-  const { tools, customers, sites, addRental } = useContext(AppContext);
+  const { tools, customers, sites, addRental, addCustomer } = useContext(AppContext);
   const router = useRouter();
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -36,6 +37,9 @@ export default function RentToolPage() {
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([
     { id: Date.now(), toolId: "", quantity: "", comment: "", tool: undefined }
   ]);
+  const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({ name: '', phone: '', address: '' });
+
 
   const handleItemChange = (id: number, field: 'toolId' | 'quantity' | 'comment', value: string) => {
     setRentalItems(items => items.map(item => {
@@ -72,6 +76,20 @@ export default function RentToolPage() {
   const removeRentalItem = (id: number) => {
     setRentalItems(items => items.filter(item => item.id !== id));
   }
+
+  const handleAddCustomer = () => {
+    if (!newCustomerData.name) {
+        toast({ title: "Error", description: "Customer name is required.", variant: "destructive" });
+        return;
+    }
+    const newCustomer = addCustomer(newCustomerData);
+    if (newCustomer) {
+        toast({ title: "Success!", description: "New customer has been added." });
+        setSelectedCustomerId(String(newCustomer.id));
+        setIsAddCustomerDialogOpen(false);
+        setNewCustomerData({ name: '', phone: '', address: '' });
+    }
+  };
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -139,18 +157,51 @@ export default function RentToolPage() {
            <div className="grid gap-6 md:grid-cols-2">
                  <div className="space-y-2">
                     <Label htmlFor="customer">Customer</Label>
-                    <Select onValueChange={setSelectedCustomerId} required value={selectedCustomerId}>
-                    <SelectTrigger id="customer">
-                        <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {customers.map(customer => (
-                        <SelectItem key={customer.id} value={String(customer.id)}>
-                            {customer.name}
-                        </SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                        <Select onValueChange={setSelectedCustomerId} required value={selectedCustomerId}>
+                        <SelectTrigger id="customer">
+                            <SelectValue placeholder="Select a customer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {customers.map(customer => (
+                            <SelectItem key={customer.id} value={String(customer.id)}>
+                                {customer.name}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button type="button" variant="outline">New</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New Customer</DialogTitle>
+                                    <DialogDescription>
+                                        Quickly add a new customer profile.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="name" className="text-right">Name</Label>
+                                    <Input id="name" value={newCustomerData.name} onChange={(e) => setNewCustomerData({...newCustomerData, name: e.target.value})} className="col-span-3" required />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="phone" className="text-right">Phone</Label>
+                                    <Input id="phone" value={newCustomerData.phone} onChange={(e) => setNewCustomerData({...newCustomerData, phone: e.target.value})} className="col-span-3" />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="address" className="text-right">Address</Label>
+                                    <Input id="address" value={newCustomerData.address} onChange={(e) => setNewCustomerData({...newCustomerData, address: e.target.value})} className="col-span-3" />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddCustomerDialogOpen(false)}>Cancel</Button>
+                                    <Button type="button" onClick={handleAddCustomer}>Add Customer</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="site">Site</Label>

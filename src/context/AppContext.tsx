@@ -76,7 +76,7 @@ interface AppContextType {
   addTool: (tool: Tool) => boolean;
   editTool: (tool: Tool) => void;
   deleteTool: (id: number) => boolean;
-  addCustomer: (customer: Customer) => void;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Customer | null;
   editCustomer: (customer: Customer) => void;
   deleteCustomer: (id: number) => void;
   addSite: (site: Site) => void;
@@ -101,7 +101,7 @@ export const AppContext = createContext<AppContextType>({
   addTool: () => false,
   editTool: () => {},
   deleteTool: () => false,
-  addCustomer: () => {},
+  addCustomer: () => null,
   editCustomer: () => {},
   deleteCustomer: () => {},
   addSite: () => {},
@@ -201,9 +201,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }
 
   // Customer CRUD
-  const addCustomer = (customer: Customer) => {
+  const addCustomer = (customer: Omit<Customer, 'id'>): Customer | null => {
     const newCustomer = { ...customer, id: Date.now() };
     updateStateAndSave({ customers: [...customers, newCustomer] });
+    return newCustomer;
   }
 
   const editCustomer = (updatedCustomer: Customer) => {
