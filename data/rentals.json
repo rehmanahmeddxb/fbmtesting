@@ -26,5 +26,19 @@
     "rate": 0,
     "total_fee": 0,
     "comment": "ALI > AHMED > KHALID"
+  },
+  {
+    "id": 1756804300301.63,
+    "invoice_number": "T-3",
+    "tool_id": 1756803864281,
+    "customer_id": 1756803958992,
+    "site_id": 1756803890825,
+    "issue_date": "2025-09-02",
+    "return_date": null,
+    "status": "Rented",
+    "quantity": 10,
+    "rate": 0,
+    "total_fee": null,
+    "comment": "HI > AHMED"
   }
 ]

@@ -292,6 +292,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         status: 'Rented',
         return_date: null,
         total_fee: null,
+        history: '',
     }));
     
     updateStateAndSave({
@@ -436,63 +437,67 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const transferTool = (rentalIds: number[], toolId: number, quantityToTransfer: number, newCustomerId: number, newSiteId: number): boolean => {
     let tempRentals = [...rentals];
     let remainingToTransfer = quantityToTransfer;
-
+  
     const totalRented = tempRentals
-        .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
-        .reduce((sum, r) => sum + r.quantity, 0);
-
+      .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
+      .reduce((sum, r) => sum + r.quantity, 0);
+  
     if (quantityToTransfer > totalRented) {
-        return false;
+      return false;
     }
-
-    const sourceRentals = tempRentals.filter(r => rentalIds.includes(r.id) && r.status === 'Rented').sort((a,b) => a.id - b.id);
+  
+    const sourceRentals = tempRentals
+      .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
+      .sort((a, b) => a.id - b.id);
     const firstSourceRental = sourceRentals[0];
     if (!firstSourceRental) return false;
-
+  
     const getCustomerNameById = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown';
-
     const newCustomerName = getCustomerNameById(newCustomerId);
-
+    
     const transferInvoices = rentals
-        .filter(r => r.invoice_number.startsWith('T-'))
-        .map(r => parseInt(r.invoice_number.substring(2)))
-        .filter(n => !isNaN(n));
+      .filter(r => r.invoice_number.startsWith('T-'))
+      .map(r => parseInt(r.invoice_number.substring(2)))
+      .filter(n => !isNaN(n));
     const newTransferId = transferInvoices.length > 0 ? Math.max(...transferInvoices) + 1 : 1;
     const newInvoiceNumber = `T-${newTransferId}`;
-
-    // Create the transfer history
+  
     const oldHistory = firstSourceRental.history || getCustomerNameById(firstSourceRental.customer_id);
     const newHistory = `${oldHistory} > ${newCustomerName}`;
-
+  
     const newRental: Rental = {
-        id: Date.now() + Math.random(),
-        invoice_number: newInvoiceNumber,
-        tool_id: toolId,
-        customer_id: newCustomerId,
-        site_id: newSiteId,
-        issue_date: format(new Date(), "yyyy-MM-dd"),
-        return_date: null,
-        status: 'Rented',
-        quantity: quantityToTransfer,
-        rate: firstSourceRental.rate,
-        total_fee: null,
-        history: newHistory,
-        comment: '', // Clear manual comment for new transfer
+      id: Date.now() + Math.random(),
+      invoice_number: newInvoiceNumber,
+      tool_id: toolId,
+      customer_id: newCustomerId,
+      site_id: newSiteId,
+      issue_date: format(new Date(), "yyyy-MM-dd"),
+      return_date: null,
+      status: 'Rented',
+      quantity: quantityToTransfer,
+      rate: firstSourceRental.rate,
+      total_fee: null,
+      history: newHistory,
+      comment: firstSourceRental.comment, // Preserve original manual comment
     };
     tempRentals.push(newRental);
-
+  
     for (const rental of sourceRentals) {
-        if (remainingToTransfer <= 0) break;
-
-        const quantityFromThisRental = Math.min(rental.quantity, remainingToTransfer);
-        
-        rental.comment = `Transferred to ${newCustomerName} (Inv: ${newInvoiceNumber})`;
-        rental.quantity -= quantityFromThisRental;
-        remainingToTransfer -= quantityFromThisRental;
+      if (remainingToTransfer <= 0) break;
+  
+      const quantityFromThisRental = Math.min(rental.quantity, remainingToTransfer);
+      const issueDate = parseISO(rental.issue_date);
+      const returnDate = new Date();
+      const daysRented = Math.max(0, differenceInCalendarDays(returnDate, issueDate)) + 1;
+      
+      // Update original rental: set status to returned
+      rental.status = 'Returned';
+      rental.return_date = format(returnDate, 'yyyy-MM-dd');
+      rental.total_fee = rental.rate * rental.quantity * daysRented;
+      
+      remainingToTransfer -= quantityFromThisRental;
     }
-    
-    tempRentals = tempRentals.filter(r => r.quantity > 0);
-
+  
     updateStateAndSave({ rentals: tempRentals });
     return true;
   };
