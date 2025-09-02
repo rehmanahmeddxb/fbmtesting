@@ -436,16 +436,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let tempRentals = [...rentals];
     let remainingToTransfer = quantityToTransfer;
   
-    // Check if total quantity is available to transfer
     const totalRented = tempRentals
         .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
         .reduce((sum, r) => sum + r.quantity, 0);
 
     if (quantityToTransfer > totalRented) {
-        return false; // Not enough quantity to transfer
+        return false;
     }
 
-    const sourceRentals = tempRentals.filter(r => rentalIds.includes(r.id) && r.status === 'Rented');
+    const sourceRentals = tempRentals.filter(r => rentalIds.includes(r.id) && r.status === 'Rented').sort((a,b) => a.id - b.id);
     const firstSourceRental = sourceRentals[0];
     if(!firstSourceRental) return false;
 
@@ -454,7 +453,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newCustomer = customers.find(c => c.id === newCustomerId);
     const newCustomerName = newCustomer ? newCustomer.name : 'Unknown';
 
-    // Generate new transfer invoice number
     const transferInvoices = rentals
         .filter(r => r.invoice_number.startsWith('T-'))
         .map(r => parseInt(r.invoice_number.substring(2)))
@@ -462,24 +460,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTransferId = transferInvoices.length > 0 ? Math.max(...transferInvoices) + 1 : 1;
     const newInvoiceNumber = `T-${newTransferId}`;
 
-    // Create the new rental record for the destination
+    // Preserve the comment history from the source rentals
+    const sourceComments = sourceRentals
+        .map(r => r.comment)
+        .filter(Boolean)
+        .join('; ');
+
+    const transferFromComment = `Transferred from ${originalCustomerName} (Inv: ${firstSourceRental.invoice_number})`;
+    const finalComment = sourceComments ? `${transferFromComment}; ${sourceComments}` : transferFromComment;
+
+
     const newRental: Rental = {
         id: Date.now() + Math.random(),
         invoice_number: newInvoiceNumber,
         tool_id: toolId,
         customer_id: newCustomerId,
         site_id: newSiteId,
-        issue_date: format(new Date(), "yyyy-MM-dd"), // Transfer date is the new issue date
+        issue_date: format(new Date(), "yyyy-MM-dd"),
         return_date: null,
         status: 'Rented',
         quantity: quantityToTransfer,
         rate: firstSourceRental.rate,
         total_fee: null,
-        comment: `Transferred from ${originalCustomerName} (Inv: ${firstSourceRental.invoice_number})`,
+        comment: finalComment,
     };
     tempRentals.push(newRental);
 
-    // Deduct from original rentals and add comments
     for (const rental of sourceRentals) {
         if (remainingToTransfer <= 0) break;
 
@@ -492,7 +498,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         remainingToTransfer -= quantityFromThisRental;
     }
     
-    // Remove original rentals that are now empty
     tempRentals = tempRentals.filter(r => r.quantity > 0);
 
     updateStateAndSave({ rentals: tempRentals });
