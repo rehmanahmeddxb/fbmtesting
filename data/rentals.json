@@ -62,11 +62,11 @@
     "customer_id": 1756800842955,
     "site_id": 1756800899507,
     "issue_date": "2025-09-02",
-    "return_date": null,
-    "status": "Rented",
+    "return_date": "2025-09-02",
+    "status": "Returned",
     "quantity": 1,
     "rate": 0,
-    "total_fee": null,
+    "total_fee": 0,
     "comment": "Transferred from khalid (Inv: T-5); Transferred from ali (Inv: T-4)"
   }
 ]

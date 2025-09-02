@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -17,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AppContext, Tool } from "@/context/AppContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 
 type RentalItem = {
     id: number;
@@ -145,6 +145,14 @@ export default function RentToolPage() {
     router.push("/dashboard/rentals");
   };
 
+  const customerOptions = customers.map(c => ({ value: String(c.id), label: c.name }));
+  const siteOptions = sites.map(s => ({ value: String(s.id), label: s.name }));
+  const toolOptions = tools.map(tool => ({
+      value: String(tool.id),
+      label: `${tool.name} (Available: ${tool.available_quantity})`,
+      disabled: tool.available_quantity === 0
+  }));
+
   return (
     <form onSubmit={handleSubmit}>
       <Card>
@@ -157,18 +165,13 @@ export default function RentToolPage() {
                  <div className="space-y-2">
                     <Label htmlFor="customer">Customer</Label>
                     <div className="flex gap-2">
-                        <Select onValueChange={setSelectedCustomerId} required value={selectedCustomerId}>
-                        <SelectTrigger id="customer">
-                            <SelectValue placeholder="Select a customer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {customers.map(customer => (
-                            <SelectItem key={customer.id} value={String(customer.id)}>
-                                {customer.name}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
+                         <Combobox
+                            options={customerOptions}
+                            value={selectedCustomerId}
+                            onSelect={setSelectedCustomerId}
+                            placeholder="Select a customer"
+                            searchPlaceholder="Search customers..."
+                        />
                         <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button type="button" variant="outline">New</Button>
@@ -204,18 +207,13 @@ export default function RentToolPage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="site">Site</Label>
-                    <Select onValueChange={setSelectedSiteId} required value={selectedSiteId}>
-                    <SelectTrigger id="site">
-                        <SelectValue placeholder="Select a site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {sites.map(site => (
-                        <SelectItem key={site.id} value={String(site.id)}>
-                            {site.name}
-                        </SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
+                     <Combobox
+                        options={siteOptions}
+                        value={selectedSiteId}
+                        onSelect={setSelectedSiteId}
+                        placeholder="Select a site"
+                        searchPlaceholder="Search sites..."
+                    />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="issue-date">Issue Date</Label>
@@ -253,21 +251,13 @@ export default function RentToolPage() {
                     <div key={item.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_2fr_auto] items-end gap-4 p-4 border rounded-md">
                         <div className="space-y-2">
                             <Label htmlFor={`tool-${item.id}`}>Tool</Label>
-                            <Select 
+                            <Combobox
+                                options={toolOptions}
                                 value={item.toolId}
-                                onValueChange={(value) => handleItemChange(item.id, 'toolId', value)}
-                                required>
-                                <SelectTrigger id={`tool-${item.id}`}>
-                                    <SelectValue placeholder="Select a tool" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {tools.map(tool => (
-                                    <SelectItem key={tool.id} value={String(tool.id)} disabled={tool.available_quantity === 0}>
-                                        {tool.name} (Available: {tool.available_quantity})
-                                    </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onSelect={(value) => handleItemChange(item.id, 'toolId', value)}
+                                placeholder="Select a tool"
+                                searchPlaceholder="Search tools..."
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
