@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "FBM Tools Manager",
   description: "Tool Rental Management System for FBM",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 const inter = Inter({
