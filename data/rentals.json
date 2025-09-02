@@ -68,5 +68,19 @@
     "rate": 0,
     "total_fee": 0,
     "comment": "Transferred from khalid (Inv: T-5); Transferred from ali (Inv: T-4)"
+  },
+  {
+    "id": 1756802668711.2566,
+    "invoice_number": "T-9",
+    "tool_id": 1756800780933,
+    "customer_id": 1756800846995,
+    "site_id": 1756800895699,
+    "issue_date": "2025-09-02",
+    "return_date": "2025-09-02",
+    "status": "Returned",
+    "quantity": 50,
+    "rate": 0,
+    "total_fee": 0,
+    "comment": "Transferred from imran (Inv: T-8); Transferred from khalid (Inv: T-7); Transferred from ameen (Inv: 2); ffsdsfs"
   }
 ]

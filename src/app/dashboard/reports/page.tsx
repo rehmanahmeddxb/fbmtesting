@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileDown } from "lucide-react";
+import { FileDown, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import React, { useContext, useState, useMemo } from "react";
 import { AppContext, Rental } from "@/context/AppContext";
@@ -15,6 +15,8 @@ import "jspdf-autotable";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import FilterBar from "@/components/filter-bar";
 import { DateRange } from "react-day-picker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 type ExportColumn = {
   id: keyof Rental | 'tool' | 'customer' | 'site';
@@ -214,6 +216,7 @@ export default function ReportsPage() {
                 <TableHead className="text-right">Issue Date</TableHead>
                 <TableHead className="text-right">Return Date</TableHead>
                 <TableHead className="text-right">Total Fee</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,7 +226,7 @@ export default function ReportsPage() {
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                   <TableCell>{getSiteName(rental.site_id)}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">{rental.comment || "N/A"}</TableCell>
+                  <TableCell className="text-muted-foreground">{rental.comment || "N/A"}</TableCell>
                   <TableCell className="text-center">{rental.quantity}</TableCell>
                   <TableCell className="text-center">
                     {getStatusBadge(rental.status)}
@@ -233,18 +236,34 @@ export default function ReportsPage() {
                   <TableCell className="text-right">
                     {rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A'}
                   </TableCell>
+                   <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/rentals/${rental.invoice_number}`}>View Invoice</Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))}
               {rentals.length > 0 && filteredRentals.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={10} className="text-center h-24">
+                    <TableCell colSpan={11} className="text-center h-24">
                        No results found for the selected filters.
                     </TableCell>
                 </TableRow>
             )}
               {rentals.length === 0 && (
                   <TableRow>
-                      <TableCell colSpan={10} className="text-center h-24">
+                      <TableCell colSpan={11} className="text-center h-24">
                           No reports found.
                       </TableCell>
                   </TableRow>

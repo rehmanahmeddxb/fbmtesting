@@ -208,7 +208,7 @@ export default function RentalDetailPage() {
               {invoiceRentals.map((rental) => (
                 <TableRow key={rental.id}>
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">{rental.comment || 'N/A'}</TableCell>
+                  <TableCell className="text-muted-foreground">{rental.comment || 'N/A'}</TableCell>
                   <TableCell className="text-center">{rental.quantity}</TableCell>
                    <TableCell className="text-center">${rental.rate.toFixed(2)}</TableCell>
                    <TableCell className="text-center">
