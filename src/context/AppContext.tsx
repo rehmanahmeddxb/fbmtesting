@@ -435,7 +435,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const transferTool = (rentalIds: number[], toolId: number, quantityToTransfer: number, newCustomerId: number, newSiteId: number): boolean => {
     let tempRentals = [...rentals];
     let remainingToTransfer = quantityToTransfer;
-  
+
     const totalRented = tempRentals
         .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
         .reduce((sum, r) => sum + r.quantity, 0);
@@ -446,12 +446,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const sourceRentals = tempRentals.filter(r => rentalIds.includes(r.id) && r.status === 'Rented').sort((a,b) => a.id - b.id);
     const firstSourceRental = sourceRentals[0];
-    if(!firstSourceRental) return false;
+    if (!firstSourceRental) return false;
 
-    const originalCustomer = customers.find(c => c.id === firstSourceRental.customer_id);
-    const originalCustomerName = originalCustomer ? originalCustomer.name : 'Unknown';
-    const newCustomer = customers.find(c => c.id === newCustomerId);
-    const newCustomerName = newCustomer ? newCustomer.name : 'Unknown';
+    const getCustomerNameById = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown';
+
+    const originalCustomerName = getCustomerNameById(firstSourceRental.customer_id);
+    const newCustomerName = getCustomerNameById(newCustomerId);
 
     const transferInvoices = rentals
         .filter(r => r.invoice_number.startsWith('T-'))
@@ -460,15 +460,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTransferId = transferInvoices.length > 0 ? Math.max(...transferInvoices) + 1 : 1;
     const newInvoiceNumber = `T-${newTransferId}`;
 
-    // Preserve the comment history from the source rentals
-    const sourceComments = sourceRentals
-        .map(r => r.comment)
-        .filter(Boolean)
-        .join('; ');
-
-    const transferFromComment = `Transferred from ${originalCustomerName} (Inv: ${firstSourceRental.invoice_number})`;
-    const finalComment = sourceComments ? `${transferFromComment}; ${sourceComments}` : transferFromComment;
-
+    // Create the transfer history comment
+    const oldComment = firstSourceRental.comment || originalCustomerName;
+    const newComment = `${oldComment} > ${newCustomerName}`;
 
     const newRental: Rental = {
         id: Date.now() + Math.random(),
@@ -482,7 +476,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         quantity: quantityToTransfer,
         rate: firstSourceRental.rate,
         total_fee: null,
-        comment: finalComment,
+        comment: newComment,
     };
     tempRentals.push(newRental);
 
@@ -490,10 +484,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (remainingToTransfer <= 0) break;
 
         const quantityFromThisRental = Math.min(rental.quantity, remainingToTransfer);
-        const originalComment = rental.comment || "";
-        const transferComment = `Transferred ${quantityFromThisRental} to ${newCustomerName} (Inv: ${newInvoiceNumber})`;
         
-        rental.comment = originalComment ? `${originalComment}; ${transferComment}` : transferComment;
+        rental.comment = `Transferred to ${newCustomerName} (Inv: ${newInvoiceNumber})`;
         rental.quantity -= quantityFromThisRental;
         remainingToTransfer -= quantityFromThisRental;
     }
