@@ -1,8 +1,9 @@
 import type { PropsWithChildren } from "react";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Wrench, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import DashboardNav from "@/components/dashboard-nav";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppProvider } from "@/context/AppContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,8 +16,8 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
         <Sidebar>
           <SidebarHeader className="p-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="bg-primary text-primary-foreground rounded-lg p-2">
-                <Wrench className="h-6 w-6" />
+              <div className="bg-primary text-primary-foreground rounded-lg p-2 flex items-center justify-center h-10 w-10">
+                <Image src="/logo.png" alt="App Logo" width={24} height={24} />
               </div>
               <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">FBM Tools</h1>
             </Link>
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
                   <DropdownMenuTrigger asChild>
                      <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                         <Avatar>
-                            <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
+                            <AvatarImage src="/profile.png" alt="User" />
                             <AvatarFallback>RA</AvatarFallback>
                         </Avatar>
                      </Button>
