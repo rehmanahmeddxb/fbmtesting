@@ -442,6 +442,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const firstSourceRental = sourceRentals[0];
     if(!firstSourceRental) return false;
 
+    const originalCustomer = customers.find(c => c.id === firstSourceRental.customer_id);
+    const originalCustomerName = originalCustomer ? originalCustomer.name : 'Unknown';
+
     // Create the new rental record for the destination
     const newRental: Rental = {
         id: Date.now() + Math.random(),
@@ -455,7 +458,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         quantity: quantityToTransfer,
         rate: firstSourceRental.rate, // or fetch new rate if needed
         total_fee: null,
-        comment: `Transferred from invoice ${firstSourceRental.invoice_number}`,
+        comment: `Transferred from ${originalCustomerName} (Inv: ${firstSourceRental.invoice_number})`,
     };
     tempRentals.push(newRental);
 
