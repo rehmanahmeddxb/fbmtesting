@@ -33,6 +33,7 @@ const exportColumns: ExportColumn[] = [
     { id: 'return_date', label: 'Return Date' },
     { id: 'total_fee', label: 'Total Fee' },
     { id: 'status', label: 'Status' },
+    { id: 'history', label: 'History' },
     { id: 'comment', label: 'Comment' },
 ];
 
@@ -113,6 +114,7 @@ export default function ReportsPage() {
                     case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
                     case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
                     case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
+                    case 'history': return rental.history || 'N/A';
                     case 'comment': return rental.comment || 'N/A';
                     default: return rental[col.id as keyof Rental];
                 }
@@ -145,6 +147,7 @@ export default function ReportsPage() {
             case 'issue_date': value = format(parseISO(rental.issue_date), "dd-M-yyyy"); break;
             case 'return_date': value = rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'; break;
             case 'total_fee': value = rental.total_fee ? `${rental.total_fee.toFixed(2)}` : 'N/A'; break;
+            case 'history': value = rental.history || 'N/A'; break;
             case 'comment': value = rental.comment || 'N/A'; break;
             default: value = rental[col.id as keyof Rental];
         }
@@ -210,7 +213,8 @@ export default function ReportsPage() {
                 <TableHead>Tool</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Site</TableHead>
-                <TableHead>Comment / History</TableHead>
+                <TableHead>History</TableHead>
+                <TableHead>Comment</TableHead>
                 <TableHead className="text-center">Qty</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-right">Issue Date</TableHead>
@@ -226,6 +230,7 @@ export default function ReportsPage() {
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                   <TableCell>{getSiteName(rental.site_id)}</TableCell>
+                  <TableCell className="text-muted-foreground">{rental.history || "N/A"}</TableCell>
                   <TableCell className="text-muted-foreground">{rental.comment || "N/A"}</TableCell>
                   <TableCell className="text-center">{rental.quantity}</TableCell>
                   <TableCell className="text-center">
@@ -256,14 +261,14 @@ export default function ReportsPage() {
               ))}
               {rentals.length > 0 && filteredRentals.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={11} className="text-center h-24">
+                    <TableCell colSpan={12} className="text-center h-24">
                        No results found for the selected filters.
                     </TableCell>
                 </TableRow>
             )}
               {rentals.length === 0 && (
                   <TableRow>
-                      <TableCell colSpan={11} className="text-center h-24">
+                      <TableCell colSpan={12} className="text-center h-24">
                           No reports found.
                       </TableCell>
                   </TableRow>
@@ -310,5 +315,3 @@ export default function ReportsPage() {
     </>
   );
 }
-
-    

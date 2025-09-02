@@ -41,6 +41,7 @@ export type Rental = {
     rate: number;
     total_fee: number | null;
     comment?: string;
+    history?: string;
 };
 
 export type RentalItemInput = {
@@ -450,7 +451,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const getCustomerNameById = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown';
 
-    const originalCustomerName = getCustomerNameById(firstSourceRental.customer_id);
     const newCustomerName = getCustomerNameById(newCustomerId);
 
     const transferInvoices = rentals
@@ -460,9 +460,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTransferId = transferInvoices.length > 0 ? Math.max(...transferInvoices) + 1 : 1;
     const newInvoiceNumber = `T-${newTransferId}`;
 
-    // Create the transfer history comment
-    const oldComment = firstSourceRental.comment || originalCustomerName;
-    const newComment = `${oldComment} > ${newCustomerName}`;
+    // Create the transfer history
+    const oldHistory = firstSourceRental.history || getCustomerNameById(firstSourceRental.customer_id);
+    const newHistory = `${oldHistory} > ${newCustomerName}`;
 
     const newRental: Rental = {
         id: Date.now() + Math.random(),
@@ -476,7 +476,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         quantity: quantityToTransfer,
         rate: firstSourceRental.rate,
         total_fee: null,
-        comment: newComment,
+        history: newHistory,
+        comment: '', // Clear manual comment for new transfer
     };
     tempRentals.push(newRental);
 

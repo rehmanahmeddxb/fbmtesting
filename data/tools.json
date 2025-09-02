@@ -3,28 +3,21 @@
     "name": "wheel barrow",
     "total_quantity": 100,
     "rate": 0,
-    "id": 1756800780933,
-    "available_quantity": 100
+    "id": 1756803838738,
+    "available_quantity": 98
   },
   {
     "name": "shovel",
     "total_quantity": 100,
     "rate": 0,
-    "id": 1756800787596,
+    "id": 1756803864281,
     "available_quantity": 100
   },
   {
     "name": "ladder",
     "total_quantity": 100,
     "rate": 0,
-    "id": 1756800796612,
-    "available_quantity": 100
-  },
-  {
-    "name": "glass",
-    "total_quantity": 100,
-    "rate": 0,
-    "id": 1756800810444,
+    "id": 1756803873273,
     "available_quantity": 100
   }
 ]

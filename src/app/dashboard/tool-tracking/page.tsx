@@ -347,63 +347,65 @@ export default function ToolTrackingPage() {
             </Dialog>
 
             {/* Transfer Dialog */}
-            <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>Transfer Tool</DialogTitle>
-                        <DialogDescription>
-                            Transfer '{transferDetails ? getToolName(transferDetails.toolId) : ''}' from '{transferDetails ? getCustomerName(transferDetails.currentCustomerId) : ''}' to another customer/site.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new-customer">Transfer to Customer</Label>
-                            <Select 
-                                value={transferDetails?.newCustomerId || ''} 
-                                onValueChange={(value) => setTransferDetails(d => d ? {...d, newCustomerId: value} : null)}
-                            >
-                                <SelectTrigger id="new-customer">
-                                    <SelectValue placeholder="Select new customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers
-                                        .filter(c => c.id !== transferDetails?.currentCustomerId)
-                                        .map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+            {transferDetails && (
+                <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Transfer Tool</DialogTitle>
+                            <DialogDescription>
+                                Transfer '{getToolName(transferDetails.toolId)}' from '{getCustomerName(transferDetails.currentCustomerId)}' to another customer/site.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-customer">Transfer to Customer</Label>
+                                <Select 
+                                    value={transferDetails.newCustomerId || ''} 
+                                    onValueChange={(value) => setTransferDetails(d => d ? {...d, newCustomerId: value} : null)}
+                                >
+                                    <SelectTrigger id="new-customer">
+                                        <SelectValue placeholder="Select new customer" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {customers
+                                            .filter(c => c.id !== transferDetails?.currentCustomerId)
+                                            .map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="new-site">Transfer to Site</Label>
+                                 <Select
+                                    value={transferDetails.newSiteId || ''} 
+                                    onValueChange={(value) => setTransferDetails(d => d ? {...d, newSiteId: value} : null)}
+                                >
+                                    <SelectTrigger id="new-site">
+                                        <SelectValue placeholder="Select new site" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sites.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="transfer-quantity">Quantity to Transfer</Label>
+                                <Input
+                                    id="transfer-quantity"
+                                    type="number"
+                                    value={transferDetails.quantityToTransfer}
+                                    onChange={(e) => setTransferDetails(d => d ? {...d, quantityToTransfer: parseInt(e.target.value) || 0} : null)}
+                                    min="1"
+                                    max={transferDetails.quantityToTransfer}
+                                />
+                            </div>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="new-site">Transfer to Site</Label>
-                             <Select
-                                value={transferDetails?.newSiteId || ''} 
-                                onValueChange={(value) => setTransferDetails(d => d ? {...d, newSiteId: value} : null)}
-                            >
-                                <SelectTrigger id="new-site">
-                                    <SelectValue placeholder="Select new site" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sites.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="transfer-quantity">Quantity to Transfer</Label>
-                            <Input
-                                id="transfer-quantity"
-                                type="number"
-                                value={transferDetails?.quantityToTransfer ?? ''}
-                                onChange={(e) => setTransferDetails(d => d ? {...d, quantityToTransfer: parseInt(e.target.value) || 0} : null)}
-                                min="1"
-                                max={transferDetails?.quantityToTransfer}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsTransferDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleTransfer}>Confirm Transfer</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsTransferDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleTransfer}>Confirm Transfer</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
     );
 }

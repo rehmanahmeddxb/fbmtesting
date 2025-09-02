@@ -1,32 +1,20 @@
 [
   {
-    "name": "ali",
+    "name": "ALI",
     "phone": "",
     "address": "",
-    "id": 1756800837691
+    "id": 1756803931712
   },
   {
-    "name": "faisal",
+    "name": "AHMED",
     "phone": "",
     "address": "",
-    "id": 1756800842955
+    "id": 1756803958992
   },
   {
-    "name": "khalid",
+    "name": "KHALID",
     "phone": "",
     "address": "",
-    "id": 1756800846995
-  },
-  {
-    "name": "imran",
-    "phone": "",
-    "address": "",
-    "id": 1756800852132
-  },
-  {
-    "name": "ameen",
-    "phone": "",
-    "address": "",
-    "id": 1756802449449
+    "id": 1756803965304
   }
 ]
