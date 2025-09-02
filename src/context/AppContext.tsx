@@ -262,7 +262,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Rental Operations
    const addRental = (items: RentalItemInput[], orderDetails: RentalOrderInput) => {
-    const tempTools = [...tools];
+    let tempTools = [...tools];
+
+    // Generate new invoice number
+    const numericInvoices = rentals
+        .map(r => parseInt(r.invoice_number))
+        .filter(n => !isNaN(n));
+    const newInvoiceNumber = numericInvoices.length > 0 ? String(Math.max(...numericInvoices) + 1) : "1";
     
     items.forEach(item => {
         const toolIndex = tempTools.findIndex(t => t.id === item.tool_id);
@@ -276,6 +282,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const newRentalsToAdd: Rental[] = items.map(item => ({
         ...orderDetails,
+        invoice_number: newInvoiceNumber,
         id: Date.now() + item.tool_id + Math.random(),
         tool_id: item.tool_id,
         quantity: item.quantity,
@@ -444,11 +451,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const originalCustomer = customers.find(c => c.id === firstSourceRental.customer_id);
     const originalCustomerName = originalCustomer ? originalCustomer.name : 'Unknown';
+    const newCustomer = customers.find(c => c.id === newCustomerId);
+    const newCustomerName = newCustomer ? newCustomer.name : 'Unknown';
+
+    // Generate new transfer invoice number
+    const transferInvoices = rentals
+        .filter(r => r.invoice_number.startsWith('T-'))
+        .map(r => parseInt(r.invoice_number.substring(2)))
+        .filter(n => !isNaN(n));
+    const newTransferId = transferInvoices.length > 0 ? Math.max(...transferInvoices) + 1 : 1;
+    const newInvoiceNumber = `T-${newTransferId}`;
 
     // Create the new rental record for the destination
     const newRental: Rental = {
         id: Date.now() + Math.random(),
-        invoice_number: `T-${firstSourceRental.invoice_number}-${Date.now()}`, // New unique invoice
+        invoice_number: newInvoiceNumber,
         tool_id: toolId,
         customer_id: newCustomerId,
         site_id: newSiteId,
@@ -456,17 +473,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return_date: null,
         status: 'Rented',
         quantity: quantityToTransfer,
-        rate: firstSourceRental.rate, // or fetch new rate if needed
+        rate: firstSourceRental.rate,
         total_fee: null,
         comment: `Transferred from ${originalCustomerName} (Inv: ${firstSourceRental.invoice_number})`,
     };
     tempRentals.push(newRental);
 
-    // Deduct from original rentals
+    // Deduct from original rentals and add comments
     for (const rental of sourceRentals) {
         if (remainingToTransfer <= 0) break;
 
         const quantityFromThisRental = Math.min(rental.quantity, remainingToTransfer);
+        const originalComment = rental.comment || "";
+        const transferComment = `Transferred ${quantityFromThisRental} to ${newCustomerName} (Inv: ${newInvoiceNumber})`;
+        
+        rental.comment = originalComment ? `${originalComment}; ${transferComment}` : transferComment;
         rental.quantity -= quantityFromThisRental;
         remainingToTransfer -= quantityFromThisRental;
     }

@@ -33,7 +33,6 @@ export default function RentToolPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
-  const [manualBookRef, setManualBookRef] = useState<string>("");
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([
     { id: Date.now(), toolId: "", quantity: "", comment: "", tool: undefined }
   ]);
@@ -94,10 +93,10 @@ export default function RentToolPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !selectedSiteId || !manualBookRef || rentalItems.some(item => !item.toolId)) {
+    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId)) {
         toast({
             title: "Error",
-            description: "Please fill all fields: customer, site, manual book ref, and select a tool for each item.",
+            description: "Please fill all fields: customer, site, and select a tool for each item.",
             variant: "destructive"
         });
         return;
@@ -135,7 +134,7 @@ export default function RentToolPage() {
             customer_id: parseInt(selectedCustomerId),
             site_id: parseInt(selectedSiteId),
             issue_date: format(date || new Date(), "yyyy-MM-dd"),
-            invoice_number: manualBookRef,
+            invoice_number: "", // Now auto-generated in context
         }
     );
 
@@ -151,7 +150,7 @@ export default function RentToolPage() {
       <Card>
         <CardHeader>
           <CardTitle>Rent Tools</CardTitle>
-          <CardDescription>Fill out the form to create a new rental order.</CardDescription>
+          <CardDescription>Fill out the form to create a new rental order. The invoice number will be generated automatically.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
            <div className="grid gap-6 md:grid-cols-2">
@@ -243,18 +242,6 @@ export default function RentToolPage() {
                         />
                     </PopoverContent>
                     </Popover>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="manual-book-ref">Manual Book Ref.</Label>
-                    <Input 
-                        id="manual-book-ref" 
-                        type="text" 
-                        placeholder="HD-101" 
-                        className="font-code"
-                        value={manualBookRef}
-                        onChange={(e) => setManualBookRef(e.target.value)} 
-                        required
-                    />
                 </div>
             </div>
 

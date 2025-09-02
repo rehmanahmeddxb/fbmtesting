@@ -37,7 +37,6 @@ export default function EditRentalPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
-  const [manualBookRef, setManualBookRef] = useState<string>("");
   const [rentalItems, setRentalItems] = useState<RentalItem[]>([]);
   const [originalRentals, setOriginalRentals] = useState<Rental[]>([]);
 
@@ -53,7 +52,6 @@ export default function EditRentalPage() {
       setDate(parseISO(firstRental.issue_date));
       setSelectedCustomerId(String(firstRental.customer_id));
       setSelectedSiteId(String(firstRental.site_id));
-      setManualBookRef(firstRental.invoice_number);
 
       const items = invoiceRentals.map(r => ({
         id: r.id,
@@ -124,10 +122,10 @@ export default function EditRentalPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !selectedSiteId || !manualBookRef || rentalItems.some(item => !item.toolId)) {
+    if (!selectedCustomerId || !selectedSiteId || rentalItems.some(item => !item.toolId)) {
         toast({
             title: "Error",
-            description: "Please fill all fields: customer, site, manual book ref, and select a tool for each item.",
+            description: "Please fill all fields: customer, site, and select a tool for each item.",
             variant: "destructive"
         });
         return;
@@ -170,7 +168,7 @@ export default function EditRentalPage() {
             customer_id: parseInt(selectedCustomerId),
             site_id: parseInt(selectedSiteId),
             issue_date: format(date || new Date(), "yyyy-MM-dd"),
-            invoice_number: manualBookRef,
+            invoice_number: invoiceNumber,
         }
     );
 
@@ -191,7 +189,7 @@ export default function EditRentalPage() {
       <Card>
         <CardHeader>
           <CardTitle>Edit Rental Order</CardTitle>
-          <CardDescription>Update the details for invoice #{invoiceNumber}.</CardDescription>
+          <CardDescription>Update the details for invoice #{invoiceNumber}. This cannot be changed.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
            <div className="grid gap-6 md:grid-cols-2">
@@ -283,18 +281,6 @@ export default function EditRentalPage() {
                         />
                     </PopoverContent>
                     </Popover>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="manual-book-ref">Manual Book Ref.</Label>
-                    <Input 
-                        id="manual-book-ref" 
-                        type="text" 
-                        placeholder="HD-101" 
-                        className="font-code"
-                        value={manualBookRef}
-                        onChange={(e) => setManualBookRef(e.target.value)} 
-                        required
-                    />
                 </div>
             </div>
 
