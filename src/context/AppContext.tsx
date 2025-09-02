@@ -87,6 +87,7 @@ interface AppContextType {
   returnTool: (rentalId: number, quantity: number) => void;
   confirmReturn: (rentalId: number) => void;
   undoReturn: (rentalId: number) => void;
+  transferTool: (rentalIds: number[], toolId: number, quantity: number, newCustomerId: number, newSiteId: number) => boolean;
   resetData: (options: ResetOptions) => void;
   isLoading: boolean;
 }
@@ -111,6 +112,7 @@ export const AppContext = createContext<AppContextType>({
   returnTool: () => {},
   confirmReturn: () => {},
   undoReturn: () => {},
+  transferTool: () => false,
   resetData: () => {},
   isLoading: true,
 });
@@ -422,6 +424,56 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     updateStateAndSave({ tools: tempTools, rentals: tempRentals });
   };
 
+  const transferTool = (rentalIds: number[], toolId: number, quantityToTransfer: number, newCustomerId: number, newSiteId: number): boolean => {
+    let tempRentals = [...rentals];
+    let remainingToTransfer = quantityToTransfer;
+  
+    // Check if total quantity is available to transfer
+    const totalRented = tempRentals
+        .filter(r => rentalIds.includes(r.id) && r.status === 'Rented')
+        .reduce((sum, r) => sum + r.quantity, 0);
+
+    if (quantityToTransfer > totalRented) {
+        return false; // Not enough quantity to transfer
+    }
+
+    const sourceRentals = tempRentals.filter(r => rentalIds.includes(r.id) && r.status === 'Rented');
+    const firstSourceRental = sourceRentals[0];
+    if(!firstSourceRental) return false;
+
+    // Create the new rental record for the destination
+    const newRental: Rental = {
+        id: Date.now() + Math.random(),
+        invoice_number: `T-${firstSourceRental.invoice_number}-${Date.now()}`, // New unique invoice
+        tool_id: toolId,
+        customer_id: newCustomerId,
+        site_id: newSiteId,
+        issue_date: format(new Date(), "yyyy-MM-dd"), // Transfer date is the new issue date
+        return_date: null,
+        status: 'Rented',
+        quantity: quantityToTransfer,
+        rate: firstSourceRental.rate, // or fetch new rate if needed
+        total_fee: null,
+        comment: `Transferred from invoice ${firstSourceRental.invoice_number}`,
+    };
+    tempRentals.push(newRental);
+
+    // Deduct from original rentals
+    for (const rental of sourceRentals) {
+        if (remainingToTransfer <= 0) break;
+
+        const quantityFromThisRental = Math.min(rental.quantity, remainingToTransfer);
+        rental.quantity -= quantityFromThisRental;
+        remainingToTransfer -= quantityFromThisRental;
+    }
+    
+    // Remove original rentals that are now empty
+    tempRentals = tempRentals.filter(r => r.quantity > 0);
+
+    updateStateAndSave({ rentals: tempRentals });
+    return true;
+  };
+
   // Reset Data
   const resetData = (options: ResetOptions) => {
     let finalState: { tools: Tool[], customers: Customer[], sites: Site[], rentals: Rental[] } = {
@@ -474,6 +526,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       returnTool,
       confirmReturn,
       undoReturn,
+      transferTool,
       resetData,
       isLoading,
     }}>

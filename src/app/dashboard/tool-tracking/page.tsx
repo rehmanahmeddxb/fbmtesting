@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,18 +10,33 @@ import { DateRange } from "react-day-picker";
 import { isWithinInterval, parseISO } from "date-fns";
 import FilterBar from "@/components/filter-bar";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, ArrowRightLeft } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 type AggregatedRental = {
     customerId: number;
     toolId: number;
     status: 'Rented' | 'Returned' | 'Returned Pending';
     totalQuantity: number;
+    // Add original rental IDs to track for transfer
+    rentalIds: number[]; 
 };
+
+type TransferDetails = {
+    rentalIds: number[];
+    toolId: number;
+    currentCustomerId: number;
+    quantityToTransfer: number;
+    newCustomerId: string;
+    newSiteId: string;
+}
 
 type ExportColumn = {
   id: keyof AggregatedRental | 'customer' | 'tool';
@@ -35,7 +51,8 @@ const exportColumns: ExportColumn[] = [
 ];
 
 export default function ToolTrackingPage() {
-    const { rentals, tools, customers, sites } = useContext(AppContext);
+    const { rentals, tools, customers, sites, transferTool } = useContext(AppContext);
+    const { toast } = useToast();
     
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -43,7 +60,9 @@ export default function ToolTrackingPage() {
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+    const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
     const [selectedExportColumns, setSelectedExportColumns] = useState<Set<ExportColumn['id']>>(new Set(exportColumns.map(c => c.id)));
+    const [transferDetails, setTransferDetails] = useState<TransferDetails | null>(null);
 
 
     const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
@@ -69,9 +88,11 @@ export default function ToolTrackingPage() {
                     toolId: rental.tool_id,
                     status: rental.status,
                     totalQuantity: 0,
+                    rentalIds: []
                 };
             }
             acc[key].totalQuantity += rental.quantity;
+            acc[key].rentalIds.push(rental.id);
             return acc;
         }, {});
 
@@ -86,6 +107,39 @@ export default function ToolTrackingPage() {
         setSelectedStatus(null);
         setDateRange(undefined);
     };
+
+    const openTransferDialog = (item: AggregatedRental) => {
+        setTransferDetails({
+            rentalIds: item.rentalIds,
+            toolId: item.toolId,
+            currentCustomerId: item.customerId,
+            quantityToTransfer: item.totalQuantity,
+            newCustomerId: "",
+            newSiteId: ""
+        });
+        setIsTransferDialogOpen(true);
+    };
+
+    const handleTransfer = () => {
+        if (!transferDetails) return;
+        const { rentalIds, toolId, quantityToTransfer, newCustomerId, newSiteId } = transferDetails;
+
+        if (!newCustomerId || !newSiteId || !quantityToTransfer || quantityToTransfer <= 0) {
+            toast({ title: "Error", description: "Please fill all transfer details.", variant: "destructive"});
+            return;
+        }
+
+        const success = transferTool(rentalIds, toolId, quantityToTransfer, parseInt(newCustomerId), parseInt(newSiteId));
+
+        if (success) {
+            toast({ title: "Success", description: "Tools have been transferred." });
+            setIsTransferDialogOpen(false);
+            setTransferDetails(null);
+        } else {
+            toast({ title: "Error", description: "Transfer quantity exceeds the amount rented.", variant: "destructive"});
+        }
+    };
+
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -150,7 +204,7 @@ export default function ToolTrackingPage() {
                     <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
                             <CardTitle>Tool Tracking Summary</CardTitle>
-                            <CardDescription>Aggregated view of tools rented by each customer.</CardDescription>
+                            <CardDescription>Aggregated view of tools rented by each customer. You can transfer rented tools from here.</CardDescription>
                         </div>
                         <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
                             <FileDown className="mr-2 h-4 w-4" /> Export
@@ -186,6 +240,7 @@ export default function ToolTrackingPage() {
                                 <TableHead>Tool</TableHead>
                                 <TableHead className="text-center">Total Quantity</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -197,18 +252,26 @@ export default function ToolTrackingPage() {
                                     <TableCell>
                                         {getStatusBadge(item.status)}
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        {item.status === 'Rented' && (
+                                            <Button variant="outline" size="sm" onClick={() => openTransferDialog(item)}>
+                                                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                                Transfer
+                                            </Button>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))}
                             {rentals.length > 0 && aggregatedData.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">
+                                    <TableCell colSpan={5} className="text-center h-24">
                                         No results found for the selected filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {rentals.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">
+                                    <TableCell colSpan={5} className="text-center h-24">
                                         No rental data to aggregate.
                                     </TableCell>
                                 </TableRow>
@@ -250,6 +313,65 @@ export default function ToolTrackingPage() {
                     Generate PDF
                     </Button>
                 </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Transfer Dialog */}
+            <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Transfer Tool</DialogTitle>
+                        <DialogDescription>
+                            Transfer '{transferDetails ? getToolName(transferDetails.toolId) : ''}' from '{transferDetails ? getCustomerName(transferDetails.currentCustomerId) : ''}' to another customer/site.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-customer">Transfer to Customer</Label>
+                            <Select 
+                                value={transferDetails?.newCustomerId} 
+                                onValueChange={(value) => setTransferDetails(d => d ? {...d, newCustomerId: value} : null)}
+                            >
+                                <SelectTrigger id="new-customer">
+                                    <SelectValue placeholder="Select new customer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers
+                                        .filter(c => c.id !== transferDetails?.currentCustomerId)
+                                        .map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="new-site">Transfer to Site</Label>
+                             <Select
+                                value={transferDetails?.newSiteId} 
+                                onValueChange={(value) => setTransferDetails(d => d ? {...d, newSiteId: value} : null)}
+                            >
+                                <SelectTrigger id="new-site">
+                                    <SelectValue placeholder="Select new site" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sites.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="transfer-quantity">Quantity to Transfer</Label>
+                            <Input
+                                id="transfer-quantity"
+                                type="number"
+                                value={transferDetails?.quantityToTransfer}
+                                onChange={(e) => setTransferDetails(d => d ? {...d, quantityToTransfer: parseInt(e.target.value)} : null)}
+                                min="1"
+                                max={transferDetails?.quantityToTransfer}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsTransferDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleTransfer}>Confirm Transfer</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>
