@@ -124,7 +124,7 @@ export default function BackupPage() {
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 This will permanently overwrite all existing data in the application with the data from the selected backup file. This action cannot be undone.
-                            </Aler_dialogDescription>
+                            </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
