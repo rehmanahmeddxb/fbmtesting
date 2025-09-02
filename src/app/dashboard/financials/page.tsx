@@ -43,7 +43,7 @@ export default function FinancialsPage() {
         return filteredRentals.reduce((sum, rental) => {
             return sum + (rental.total_fee || calculateFee(rental));
         }, 0);
-    }, [filteredRentals, calculateFee]);
+    }, [filteredRentals]);
     
     const totalReceived = useMemo(() => {
          return filteredRentals
@@ -55,7 +55,7 @@ export default function FinancialsPage() {
         return filteredRentals
             .filter(r => r.status === 'Rented')
             .reduce((sum, rental) => sum + calculateFee(rental), 0);
-    }, [filteredRentals, calculateFee]);
+    }, [filteredRentals]);
 
     const monthlyData = useMemo(() => {
         const data = Array.from({ length: 12 }, (_, i) => ({
@@ -100,6 +100,28 @@ export default function FinancialsPage() {
         doc.save(`financial_report_${format(new Date(), "yyyy-MM-dd")}.pdf`);
     };
 
+    const handleGenerateCsv = () => {
+        const headers = ["Invoice #", "Customer", "Tool", "Status", "Issue Date", "Return Date", "Fee"];
+        const data = filteredRentals.map(rental => [
+            `"${rental.invoice_number}"`,
+            `"${getCustomerName(rental.customer_id)}"`,
+            `"${getToolName(rental.tool_id)}"`,
+            `"${rental.status}"`,
+            `"${format(parseISO(rental.issue_date), "dd-M-yyyy")}"`,
+            `"${rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'}"`,
+            `"${(rental.total_fee ?? calculateFee(rental)).toFixed(2)}"`
+        ].join(','));
+
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...data].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `financial_report_${format(new Date(), "yyyy-MM-dd")}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6">
             <Card>
@@ -111,8 +133,11 @@ export default function FinancialsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                             <DateRangePicker date={date} setDate={setDate} />
+                            <Button variant="outline" onClick={handleGenerateCsv} disabled={!date?.from}>
+                                <FileDown className="mr-2 h-4 w-4" /> Export CSV
+                            </Button>
                              <Button variant="outline" onClick={handleGeneratePdf} disabled={!date?.from}>
-                                <FileDown className="mr-2 h-4 w-4" /> Export
+                                <FileDown className="mr-2 h-4 w-4" /> Export PDF
                             </Button>
                         </div>
                     </div>

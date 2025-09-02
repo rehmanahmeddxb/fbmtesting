@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppContext, Site } from "@/context/AppContext";
@@ -81,6 +80,21 @@ export default function SitesPage() {
     setIsExportDialogOpen(false);
     toast({ title: "Success!", description: "Your PDF report has been generated." });
   };
+  
+  const handleGenerateCsv = () => {
+    const headers = ['Site Name'];
+    const data = filteredSites.map(site => `"${site.name}"`);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...data].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "sites_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Success!", description: "Your CSV report has been generated." });
+  };
+
 
   return (
     <>
@@ -92,8 +106,11 @@ export default function SitesPage() {
               <CardDescription>Manage rental sites. View, add, or remove site locations.</CardDescription>
             </div>
             <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
-                  <FileDown className="mr-2 h-4 w-4" /> Export
+                <Button variant="outline" onClick={handleGenerateCsv}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export CSV
+                </Button>
+                <Button variant="outline" onClick={handleGeneratePdf}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export PDF
                 </Button>
                 <Button onClick={() => { setSelectedSite(null); setSiteName(''); setIsAddDialogOpen(true); }}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Site
@@ -198,24 +215,6 @@ export default function SitesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Export Dialog */}
-      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Export Sites to PDF</DialogTitle>
-            <DialogDescription>
-              A PDF of all currently filtered sites will be generated.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-             <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" onClick={handleGeneratePdf}>
-              Generate PDF
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

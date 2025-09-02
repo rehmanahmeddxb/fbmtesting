@@ -61,6 +61,7 @@ const exportColumns: ExportColumn[] = [
   { id: 'return_date', label: 'Return Date' },
   { id: 'status', label: 'Status' },
   { id: 'total_fee', label: 'Fee' },
+  { id: 'comment', label: 'Comment' },
 ];
 
 export default function RentalsPage() {
@@ -125,7 +126,17 @@ export default function RentalsPage() {
             totalQuantity: group.reduce((sum, item) => sum + item.quantity, 0),
             overallStatus
         };
-    }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
+    }).sort((a, b) => {
+        const aIsTransfer = a.invoice_number.startsWith('T-');
+        const bIsTransfer = b.invoice_number.startsWith('T-');
+        const aNum = parseInt(a.invoice_number.replace('T-', ''));
+        const bNum = parseInt(b.invoice_number.replace('T-', ''));
+
+        if (aIsTransfer && !bIsTransfer) return 1;
+        if (!aIsTransfer && bIsTransfer) return -1;
+        if (aIsTransfer && bIsTransfer) return bNum - aNum;
+        return bNum - aNum;
+    });
   }, [filteredRentals, getToolName]);
 
 
@@ -238,6 +249,7 @@ export default function RentalsPage() {
             case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
             case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
             case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
+            case 'comment': return rental.comment || 'N/A';
             default: return rental[col.id as keyof Rental];
           }
         });
@@ -256,6 +268,41 @@ export default function RentalsPage() {
     doc.save("rentals_report.pdf");
     setIsExportDialogOpen(false);
     toast({ title: "Success!", description: "Your PDF report has been generated." });
+  };
+
+  const handleGenerateCsv = () => {
+    const headers = exportColumns
+      .filter(col => selectedExportColumns.has(col.id))
+      .map(col => col.label);
+    
+    const data = filteredRentals.map(rental => {
+      return exportColumns
+        .filter(col => selectedExportColumns.has(col.id))
+        .map(col => {
+            let value: any;
+             switch(col.id) {
+                case 'customer': value = getCustomerName(rental.customer_id); break;
+                case 'site': value = getSiteName(rental.site_id); break;
+                case 'tool': value = getToolName(rental.tool_id); break;
+                case 'return_date': value = rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'; break;
+                case 'issue_date': value = format(parseISO(rental.issue_date), "dd-M-yyyy"); break;
+                case 'total_fee': value = rental.total_fee ? `${rental.total_fee.toFixed(2)}` : 'N/A'; break;
+                case 'comment': value = rental.comment || 'N/A'; break;
+                default: value = rental[col.id as keyof Rental];
+            }
+            return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+        }).join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...data].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "rentals_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Success!", description: "Your CSV report has been generated." });
   };
 
 
@@ -318,7 +365,7 @@ export default function RentalsPage() {
           <TableBody>
             {groupedRentals.map((rentalGroup) => (
               <TableRow key={rentalGroup.invoice_number}>
-                <TableCell className="font-code">{rentalGroup.invoice_number}</TableCell>
+                <TableCell className="font-mono">{rentalGroup.invoice_number}</TableCell>
                 <TableCell>{getCustomerName(rentalGroup.customer_id)}</TableCell>
                 <TableCell>{getSiteName(rentalGroup.site_id)}</TableCell>
                 <TableCell className="max-w-[250px] truncate">{rentalGroup.items}</TableCell>
@@ -459,9 +506,9 @@ export default function RentalsPage() {
     <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Export Rentals to PDF</DialogTitle>
+          <DialogTitle>Export Rentals</DialogTitle>
           <DialogDescription>
-            Select the columns you want to include in the PDF report.
+            Select columns for PDF export. CSV will include all columns.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-60 overflow-y-auto">
@@ -483,8 +530,9 @@ export default function RentalsPage() {
         </div>
         <DialogFooter>
            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
-          <Button type="submit" onClick={handleGeneratePdf}>
-            Generate PDF
+           <Button onClick={handleGenerateCsv}>Export CSV</Button>
+          <Button onClick={handleGeneratePdf}>
+            Export PDF
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -141,6 +141,29 @@ export default function CustomersPage() {
     toast({ title: "Success!", description: "Your PDF report has been generated." });
   };
 
+  const handleGenerateCsv = () => {
+    const headers = exportColumns
+      .filter(col => selectedExportColumns.has(col.id))
+      .map(col => col.label);
+    
+    const data = filteredCustomers.map(customer => {
+        return exportColumns
+            .filter(col => selectedExportColumns.has(col.id))
+            .map(col => `"${customer[col.id]}"`)
+            .join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...data].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "customer_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Success!", description: "Your CSV report has been generated." });
+  }
+
   return (
     <>
       <Card>
@@ -274,9 +297,9 @@ export default function CustomersPage() {
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Export Customers to PDF</DialogTitle>
+            <DialogTitle>Export Customers</DialogTitle>
             <DialogDescription>
-              Select the columns you want to include in the PDF report.
+              Select columns for PDF export. CSV will include all columns.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -298,8 +321,9 @@ export default function CustomersPage() {
           </div>
           <DialogFooter>
              <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" onClick={handleGeneratePdf}>
-              Generate PDF
+             <Button onClick={handleGenerateCsv}>Export CSV</Button>
+            <Button onClick={handleGeneratePdf}>
+              Export PDF
             </Button>
           </DialogFooter>
         </DialogContent>

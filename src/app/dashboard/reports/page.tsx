@@ -6,16 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useMemo } from "react";
 import { AppContext, Rental } from "@/context/AppContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isWithinInterval } from "date-fns";
+import FilterBar from "@/components/filter-bar";
+import { DateRange } from "react-day-picker";
 
 type ExportColumn = {
-  id: keyof Rental | 'tool' | 'customer';
+  id: keyof Rental | 'tool' | 'customer' | 'site';
   label: string;
 }
 
@@ -24,20 +26,50 @@ const exportColumns: ExportColumn[] = [
     { id: 'tool', label: 'Tool' },
     { id: 'quantity', label: 'Qty' },
     { id: 'customer', label: 'Customer' },
+    { id: 'site', label: 'Site' },
     { id: 'issue_date', label: 'Issue Date' },
     { id: 'return_date', label: 'Return Date' },
     { id: 'total_fee', label: 'Total Fee' },
     { id: 'status', label: 'Status' },
+    { id: 'comment', label: 'Comment' },
 ];
 
 
 export default function ReportsPage() {
-  const { rentals, tools, customers } = useContext(AppContext);
+  const { rentals, tools, customers, sites } = useContext(AppContext);
   const [isPdfExportDialogOpen, setIsPdfExportDialogOpen] = useState(false);
   const [selectedPdfColumns, setSelectedPdfColumns] = useState<Set<ExportColumn['id']>>(new Set(exportColumns.map(c => c.id)));
 
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
   const getToolName = (id: number) => tools.find(t => t.id === id)?.name || 'Unknown Tool';
   const getCustomerName = (id: number) => customers.find(c => c.id === id)?.name || 'Unknown Customer';
+  const getSiteName = (id: number) => sites.find((s) => s.id === id)?.name || 'Unknown Site';
+  
+  const filteredRentals = useMemo(() => {
+    return rentals.filter(rental => {
+      const issueDate = parseISO(rental.issue_date);
+      const isDateInRange = !dateRange?.from || isWithinInterval(issueDate, { start: dateRange.from, end: dateRange.to || dateRange.from });
+      const isCustomerMatch = !selectedCustomerId || rental.customer_id === parseInt(selectedCustomerId);
+      const isSiteMatch = !selectedSiteId || rental.site_id === parseInt(selectedSiteId);
+      const isToolMatch = !selectedToolId || rental.tool_id === parseInt(selectedToolId);
+      const isStatusMatch = !selectedStatus || rental.status === selectedStatus;
+
+      return isDateInRange && isCustomerMatch && isSiteMatch && isToolMatch && isStatusMatch;
+    }).sort((a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime());
+  }, [rentals, dateRange, selectedCustomerId, selectedSiteId, selectedToolId, selectedStatus]);
+
+  const handleResetFilters = () => {
+    setSelectedCustomerId(null);
+    setSelectedSiteId(null);
+    setSelectedToolId(null);
+    setSelectedStatus(null);
+    setDateRange(undefined);
+  };
   
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -68,16 +100,18 @@ export default function ReportsPage() {
       .filter(col => selectedPdfColumns.has(col.id))
       .map(col => col.label);
     
-    const tableData = rentals.map(rental => {
+    const tableData = filteredRentals.map(rental => {
         return exportColumns
             .filter(col => selectedPdfColumns.has(col.id))
             .map(col => {
                 switch(col.id) {
                     case 'tool': return getToolName(rental.tool_id);
                     case 'customer': return getCustomerName(rental.customer_id);
+                    case 'site': return getSiteName(rental.site_id);
                     case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
                     case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
                     case 'total_fee': return rental.total_fee ? `$${rental.total_fee.toFixed(2)}` : 'N/A';
+                    case 'comment': return rental.comment || 'N/A';
                     default: return rental[col.id as keyof Rental];
                 }
             });
@@ -99,16 +133,20 @@ export default function ReportsPage() {
 
   const handleGenerateCsv = () => {
     const headers = exportColumns.map(col => col.label);
-    const data = rentals.map(rental => {
+    const data = filteredRentals.map(rental => {
       return exportColumns.map(col => {
+         let value: any;
          switch(col.id) {
-            case 'tool': return getToolName(rental.tool_id);
-            case 'customer': return getCustomerName(rental.customer_id);
-            case 'issue_date': return format(parseISO(rental.issue_date), "dd-M-yyyy");
-            case 'return_date': return rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A';
-            case 'total_fee': return rental.total_fee ? `${rental.total_fee.toFixed(2)}` : 'N/A';
-            default: return rental[col.id as keyof Rental];
+            case 'tool': value = getToolName(rental.tool_id); break;
+            case 'customer': value = getCustomerName(rental.customer_id); break;
+            case 'site': value = getSiteName(rental.site_id); break;
+            case 'issue_date': value = format(parseISO(rental.issue_date), "dd-M-yyyy"); break;
+            case 'return_date': value = rental.return_date ? format(parseISO(rental.return_date), "dd-M-yyyy") : 'N/A'; break;
+            case 'total_fee': value = rental.total_fee ? `${rental.total_fee.toFixed(2)}` : 'N/A'; break;
+            case 'comment': value = rental.comment || 'N/A'; break;
+            default: value = rental[col.id as keyof Rental];
         }
+        return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
       }).join(',');
     });
 
@@ -140,6 +178,27 @@ export default function ReportsPage() {
               </Button>
             </div>
           </div>
+          <FilterBar
+            customers={customers}
+            sites={sites}
+            tools={tools}
+            selectedCustomerId={selectedCustomerId}
+            setSelectedCustomerId={setSelectedCustomerId}
+            selectedSiteId={selectedSiteId}
+            setSelectedSiteId={setSelectedSiteId}
+            selectedToolId={selectedToolId}
+            setSelectedToolId={setSelectedToolId}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            onReset={handleResetFilters}
+            statusOptions={[
+                { value: 'Rented', label: 'Rented' },
+                { value: 'Returned Pending', label: 'Returned Pending' },
+                { value: 'Returned', label: 'Returned' },
+            ]}
+        />
         </CardHeader>
         <CardContent>
           <Table>
@@ -156,9 +215,9 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rentals.map((rental) => (
+              {filteredRentals.map((rental) => (
                 <TableRow key={rental.id}>
-                  <TableCell className="font-mono font-code">{rental.invoice_number}</TableCell>
+                  <TableCell className="font-mono">{rental.invoice_number}</TableCell>
                   <TableCell className="font-medium">{getToolName(rental.tool_id)}</TableCell>
                   <TableCell>{getCustomerName(rental.customer_id)}</TableCell>
                   <TableCell className="text-center">{rental.quantity}</TableCell>
@@ -172,6 +231,13 @@ export default function ReportsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {rentals.length > 0 && filteredRentals.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                       No results found for the selected filters.
+                    </TableCell>
+                </TableRow>
+            )}
               {rentals.length === 0 && (
                   <TableRow>
                       <TableCell colSpan={8} className="text-center h-24">

@@ -56,17 +56,17 @@
     "total_fee": 0
   },
   {
-    "id": 1756801440573.3904,
-    "invoice_number": "T-5",
+    "id": 1756801818904.0562,
+    "invoice_number": "T-6",
     "tool_id": 1756800787596,
-    "customer_id": 1756800846995,
-    "site_id": 1756800895699,
+    "customer_id": 1756800842955,
+    "site_id": 1756800899507,
     "issue_date": "2025-09-02",
     "return_date": null,
     "status": "Rented",
     "quantity": 1,
     "rate": 0,
     "total_fee": null,
-    "comment": "Transferred from ali (Inv: T-4)"
+    "comment": "Transferred from khalid (Inv: T-5); Transferred from ali (Inv: T-4)"
   }
 ]

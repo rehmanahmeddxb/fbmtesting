@@ -64,6 +64,25 @@ export default function SummaryPage() {
         doc.save("inventory_summary.pdf");
     };
 
+    const handleGenerateCsv = () => {
+        const headers = ["Tool Name", "Total Quantity", "Available Quantity", "Rented Quantity"];
+        const data = tools.map(tool => [
+            `"${tool.name}"`,
+            tool.total_quantity,
+            tool.available_quantity,
+            tool.total_quantity - tool.available_quantity
+        ].join(','));
+
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...data].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "inventory_summary.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6">
             <Card>
@@ -73,9 +92,14 @@ export default function SummaryPage() {
                             <CardTitle>Inventory Summary</CardTitle>
                             <CardDescription>A quick overview of your entire tool inventory status.</CardDescription>
                         </div>
-                        <Button variant="outline" onClick={handleGeneratePdf}>
-                            <FileDown className="mr-2 h-4 w-4" /> Export
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleGenerateCsv}>
+                                <FileDown className="mr-2 h-4 w-4" /> Export CSV
+                            </Button>
+                            <Button variant="outline" onClick={handleGeneratePdf}>
+                                <FileDown className="mr-2 h-4 w-4" /> Export PDF
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
